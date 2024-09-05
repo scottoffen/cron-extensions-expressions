@@ -1,0 +1,49 @@
+name: Tag Merge to Main
+
+on:
+  workflow_dispatch:
+    inputs:
+      something:
+        description: 'Something'
+        required: false
+
+jobs:
+  increment-tag:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Fetch tags
+        run: git fetch --tags
+
+      - name: Get the latest tag
+        id: get_latest_tag
+        run: |
+          latest_tag=$(git describe --tags $(git rev-list --tags --max-count=1))
+          echo "latest_tag=$latest_tag"
+          echo "tag=$latest_tag" >> $GITHUB_ENV
+      
+      - name: Increment tag
+        id: increment_tag
+        run: |
+          if [[ ${{ env.tag }} == "" ]]; then
+            new_tag="v0.0.1"
+          else
+            IFS='.' read -r -a parts <<< "${{ env.tag }}"
+            major=${parts[0]}
+            minor=${parts[1]}
+            patch=${parts[2]}
+            new_patch=$((patch + 1))
+            new_tag="v${major}.${minor}.${new_patch}"
+          fi
+          echo "new_tag=$new_tag" >> $GITHUB_ENV
+          echo "New tag: $new_tag"
+
+      - name: Create new tag
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag ${{ env.new_tag }}
+          git push origin ${{ env.new_tag }}

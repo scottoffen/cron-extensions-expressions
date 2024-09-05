@@ -1,0 +1,28 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.59
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Cron.Extensions.Expressions", "Cron.Extensions.Expressions\Cron.Extensions.Expressions.csproj", "{397B8771-9411-4879-858D-4D5F06251E6B}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Cron.Extensions.Expressions.Tests", "Cron.Extensions.Expressions.Tests\Cron.Extensions.Expressions.Tests.csproj", "{37743764-33FC-4084-A8C9-19D543649822}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{397B8771-9411-4879-858D-4D5F06251E6B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{397B8771-9411-4879-858D-4D5F06251E6B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{397B8771-9411-4879-858D-4D5F06251E6B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{397B8771-9411-4879-858D-4D5F06251E6B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{37743764-33FC-4084-A8C9-19D543649822}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{37743764-33FC-4084-A8C9-19D543649822}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{37743764-33FC-4084-A8C9-19D543649822}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{37743764-33FC-4084-A8C9-19D543649822}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+EndGlobal

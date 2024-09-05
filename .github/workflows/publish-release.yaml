@@ -1,0 +1,90 @@
+name: Publish Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      runAnyway:
+        description: 'Run the workflow anyway'
+        required: false
+        default: true
+        type: boolean
+
+  pull_request:
+    types: [closed]
+    branches:
+      - main
+
+jobs:
+
+  create-release:
+    if: ${{ github.event.pull_request.merged == true || inputs.runAnyway == true }}
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: write
+      packages: write
+
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Fetch tags
+        run: git fetch --tags
+
+      - name: Get latest tag
+        id: get_latest_tag
+        run: |
+          tag_count=$(git tag | wc -l)
+          if [[ $tag_count -eq 0 ]]; then
+            latest_tag="v0.0.0"
+          else
+            latest_tag=$(git describe --tags $(git rev-list --tags --max-count=1))
+          fi
+          echo "latest_tag: $latest_tag"
+          echo "latest_tag=$latest_tag" >> $GITHUB_ENV
+      
+      - name: Increment tag
+        id: increment_tag
+        run: |
+          if [[ ${{ env.latest_tag }} == "" ]]; then
+            tag="0.0.1"
+          else
+            IFS='.' read -r -a parts <<< "${{ env.latest_tag }}"
+            major=${parts[0]}
+            minor=${parts[1]}
+            patch=${parts[2]}
+            new_patch=$((patch + 1))
+            tag="${major}.${minor}.${new_patch}"
+          fi
+          echo "tag=$tag" >> $GITHUB_ENV
+          echo "tag: $tag"
+          version=${tag:1}
+          echo "VERSION=$version" >> $GITHUB_ENV
+          echo "VERSION: $version"
+
+      - name: Create new Release
+        run: gh release create ${{ env.tag }} -t "${{ env.tag }}" --generate-notes
+
+      - name: Build
+        run: dotnet build ./src --configuration Release /p:Version=${VERSION}
+
+      - name: Test
+        run: dotnet test ./src --configuration Release /p:Version=${VERSION} --no-build
+
+      - name: Pack
+        run: dotnet pack ./src --configuration Release /p:Version=${VERSION} --no-build --output .
+
+      - name: Push to GitHub Packages
+        if: inputs.runAnyway == true
+        run: |
+          dotnet nuget push Cron.Extensions.Expressions.${VERSION}.nupkg --source https://nuget.pkg.github.com/scottoffen/index.json --api-key ${{ secrets.GITHUB_TOKEN }}
+          dotnet nuget push Cron.Extensions.Expressions.${VERSION}.snupkg --source https://nuget.pkg.github.com/scottoffen/index.json --api-key ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Push to Official Nuget
+        if: github.event.pull_request.merged == true
+        run: |
+          dotnet nuget push Cron.Extensions.Expressions.${VERSION}.nupkg --source https://api.nuget.org/v3/index.json --api-key ${{ secrets.NUGET_TOKEN }}
+          dotnet nuget push Cron.Extensions.Expressions.${VERSION}.snupkg --source https://api.nuget.org/v3/index.json --api-key ${{ secrets.NUGET_TOKEN }}
