@@ -1,0 +1,31 @@
+# Displays version value that will be created for the selected branch.
+name: Version Check
+
+on:
+  workflow_dispatch:
+
+jobs:
+  version-check:
+    name: Check Version
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code (Deep Clone)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup .NET SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Get Version Info
+        id: get_version
+        run: |
+          cd src/Cron.Extensions.Expressions
+          echo "version='$(nbgv get-version -v NugetPackageVersion)'" >> "$GITHUB_OUTPUT"
+          cd ../..
+
+      - name: Display Version Info
+        run: echo "The version is ${{ steps.get_version.outputs.version }}"
