@@ -47,7 +47,7 @@ internal static class FieldValidator
         }
         else if (value.Contains('-'))
         {
-            var values = value.Split('-', 2);
+            var values = value.Split(['-'], 2);
             var start = int.Parse(values[0]);
             var end = int.Parse(values[1]);
 

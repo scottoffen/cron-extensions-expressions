@@ -118,7 +118,7 @@ public class CronExpression
     /// <exception cref="FormatException"></exception>
     public static CronExpression Parse(string value)
     {
-        var parts = value.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        var parts = value.Split([' '], StringSplitOptions.RemoveEmptyEntries);
         if (parts.Length != 5)
         {
             throw new FormatException($"Invalid cron expression. Found {parts.Length} parts instead of 5.");
@@ -133,7 +133,11 @@ public class CronExpression
     /// <param name="value"></param>
     /// <param name="expression"></param>
     /// <returns></returns>
+#if NETSTANDARD2_0
+    public static bool TryParse(string value, out CronExpression? expression)
+#else
     public static bool TryParse(string value, [NotNullWhen(true)] out CronExpression? expression)
+#endif
     {
         try
         {
