@@ -22,9 +22,8 @@ on:
     branches:
     - main
     paths:
-      - '!src/**/*.md'
       - 'src/**'
-
+      - '!src/**/*.md'
 
 jobs:
   # This job will build and run the tests for the project
@@ -38,25 +37,21 @@ jobs:
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
 
-    # The steps below will run in order for each of strageies defined in the matrix
+    # The steps below will run in order for each of strategies defined in the matrix
     steps:
 
     # Installs the most recent versions of the .NET SDKs
     - name: Setup .NET SDK
       uses: actions/setup-dotnet@v4
       with:
-        dotnet-version: |
-          5.0.x
-          6.0.x
-          7.0.x
-          8.0.x
+        dotnet-version: 8.0.x
 
     # Displays the available .NET SDKs for verification
     - name: Display Available .NET SDKs
       run: dotnet --list-sdks
 
     # Checks out the code from the repository using a deep clone
-    # The deep close in necessary to access the full history of the repository
+    # The deep clone is necessary to access the full history of the repository
     # so that the NerdBank.GitVersioning tool can determine the version number
     - name: Checkout Code (Deep Clone)
       uses: actions/checkout@v4
@@ -101,18 +96,14 @@ jobs:
     - name: Setup .NET SDK
       uses: actions/setup-dotnet@v4
       with:
-        dotnet-version: |
-          5.0.x
-          6.0.x
-          7.0.x
-          8.0.x
+        dotnet-version: 8.0.x
 
     # Displays the available .NET SDKs for verification
     - name: Display Available .NET SDKs
       run: dotnet --list-sdks
 
     # Checks out the code from the repository using a deep clone
-    # The deep close in necessary to access the full history of the repository
+    # The deep clone is necessary to access the full history of the repository
     # so that the NerdBank.GitVersioning tool can determine the version number
     - name: Checkout Code (Deep Clone)
       uses: actions/checkout@v4
@@ -134,7 +125,7 @@ jobs:
         echo "pushNuget: $PUSH_NUGET"
 
     # Publishes the package to GitHub Packages
-    # This step is run by default, but can be disabled
+    # This step is run by default, but should be disabled when the workflow is triggered manually
     - name: Publish to GitHub Packages
       if: env.PUSH_GITHUB == 'true'
       run: |
@@ -142,7 +133,7 @@ jobs:
         dotnet nuget push ./publish/*.snupkg --source https://nuget.pkg.github.com/scottoffen/index.json --api-key ${{ secrets.GITHUB_TOKEN }}
 
     # Publishes the package to Nuget.org
-    # This step is optional and can be triggered manually
+    # This step is optional and can ONLY be triggered manually
     # The NUGET_API_KEY secret must be set in the repository settings
     - name: Publish to Nuget.org
       if: env.PUSH_NUGET == 'true'
@@ -150,8 +141,10 @@ jobs:
         dotnet nuget push ./publish/*.nupkg --source https://api.nuget.org/v3/index.json --api-key ${{ secrets.NUGET_API_KEY }}
 
     # Outputs the version number for the release
+    # This step is run only if the PUSH_GITHUB input is true
     # See https://www.jameskerr.blog/posts/how-to-set-output-in-github-actions/
     - name: Get Version Info
+      if: env.PUSH_GITHUB == 'true'
       id: get_version
       run: |
         cd src/Cron.Extensions.Expressions
@@ -159,7 +152,9 @@ jobs:
         cd ../..
 
     # Create a release tag based on the version number
+    # This step is run only if the PUSH_GITHUB input is true
     - name: Create Release
+      if: env.PUSH_GITHUB == 'true'
       run: gh release create ${{ steps.get_version.outputs.version }} --title ${{ steps.get_version.outputs.version }} --notes "Release ${{ steps.get_version.outputs.version }}" --target main
       env:
         GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
