@@ -1,47 +1,32 @@
 ---
 sidebar_position: 1
+title: CRON Expressions
 ---
 
-# Tutorial Intro
+# What is a CRON Expression?
 
-Let's discover **Docusaurus in less than 5 minutes**.
+A cron expression is a string used to define a schedule for running tasks in Unix-like systems, particularly in the context of the cron job scheduler. Cron expressions consist of five or six fields that define specific times or intervals for executing a command or script
 
-## Getting Started
+The typical format of a cron expression is:
 
-Get started by **creating a new site**.
-
-Or **try Docusaurus immediately** with **[docusaurus.new](https://docusaurus.new)**.
-
-### What you'll need
-
-- [Node.js](https://nodejs.org/en/download/) version 20.0 or above:
-  - When installing Node.js, you are recommended to check all checkboxes related to dependencies.
-
-## Generate a new site
-
-Generate a new Docusaurus site using the **classic template**.
-
-The classic template will automatically be added to your project after you run the command:
-
-```bash
-npm init docusaurus@latest my-website classic
+```
+* * * * * command_to_execute
+- - - - -
+| | | | |
+| | | | ----- Day of the week (0 - 7) (Sunday = 0 or 7)
+| | | ------- Month (1 - 12)
+| | --------- Day of the month (1 - 31)
+| ----------- Hour (0 - 23)
+------------- Minute (0 - 59)
 ```
 
-You can type this command into Command Prompt, Powershell, Terminal, or any other integrated terminal of your code editor.
+Remembering how to construct and parse these expressions can be tricky. This package provides the `CronExpression` class to simplify that.
 
-The command also installs all necessary dependencies you need to run Docusaurus.
+:::warning[Property Validation]
 
-## Start your site
+Values for each property will be validated for both format and range before being assigned. An exception will be thrown if the format or value is not valid for the property. E.g. 
+- minutes must be between 0 and 59
+- range start values must be less than end values
+- day of week does not support increment values.
 
-Run the development server:
-
-```bash
-cd my-website
-npm run start
-```
-
-The `cd` command changes the directory you're working with. In order to work with your newly created Docusaurus site, you'll need to navigate the terminal there.
-
-The `npm run start` command builds your website locally and serves it through a development server, ready for you to view at http://localhost:3000/.
-
-Open `docs/intro.md` (this page) and edit some lines: the site **reloads automatically** and displays your changes.
+:::

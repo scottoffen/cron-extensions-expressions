@@ -1,0 +1,28 @@
+Summary
+  Generated on: 10/14/2025 - 6:03:08 PM
+  Coverage date: 10/14/2025 - 6:03:06 PM
+  Parser: Cobertura
+  Assemblies: 1
+  Classes: 6
+  Files: 6
+  Line coverage: 99.3%
+  Covered lines: 304
+  Uncovered lines: 2
+  Coverable lines: 306
+  Total lines: 666
+  Branch coverage: 90.5% (96 of 106)
+  Covered branches: 96
+  Total branches: 106
+  Method coverage: 100% (47 of 47)
+  Full method coverage: 97.8% (46 of 47)
+  Covered methods: 47
+  Fully covered methods: 46
+  Total methods: 47
+
+Cron.Extensions.Expressions                         99.3%
+  Cron.Extensions.Expressions.CronExpression         100%
+  Cron.Extensions.Expressions.ExecutionExtensions    100%
+  Cron.Extensions.Expressions.FieldValidator        97.5%
+  Cron.Extensions.Expressions.IncrementExtensions    100%
+  Cron.Extensions.Expressions.ListExtensions         100%
+  Cron.Extensions.Expressions.RangeExtensions        100%

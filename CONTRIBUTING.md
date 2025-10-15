@@ -4,7 +4,7 @@ Community feedback is used to inform the direction of the project, and we absolu
 
 # How To Get Help
 
-Issues are often created that are not bugs or feature requests, but rather were questions or discussions - most of which could be (and were) answered by anyone in the community; they're not exclusive to the maintainers. For feedback like this, there are several places where people can get all kinds of help, and we would encourage you to use them first.
+Issues are often created that are not bugs or feature requests, but rather questions or discussions - most of which could be answered by anyone in the community; they're not exclusive to the maintainers. For feedback like this, there are several places where people can get all kinds of help, and we would encourage you to use them first.
 
 - Consult the [official documentation](https://scottoffen.github.io/cron-extensions-expressions).
 - Engage in our [community discussions](https://github.com/scottoffen/cron-extensions-expressions/discussions).
