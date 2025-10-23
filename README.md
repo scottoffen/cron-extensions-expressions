@@ -183,6 +183,17 @@ var shouldBeFalse = expression.WillRunOn(date1);
 var shouldBeTrue = expression.WillRunOn(date2);
 ```
 
+## Test Coverage
+
+You can generate and open a test coverage report by running the following command in the project root:
+
+```bash
+pwsh ./test-coverage.ps1
+```
+
+> [!NOTE]
+> This is a [Powershell](https://learn.microsoft.com/en-us/powershell/) script. You must have Powershell installed to run this command.
+
 ## Attribution
 
 <a href="https://www.flaticon.com/free-icons/stopwatch" title="stopwatch icons">Stopwatch icons created by Ilham Fitrotul Hayat - Flaticon</a>
