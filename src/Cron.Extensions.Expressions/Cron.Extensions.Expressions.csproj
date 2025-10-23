@@ -4,12 +4,14 @@
     <TargetFrameworks>net5.0;net6.0;net7.0;net8.0</TargetFrameworks>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
+    <LangVersion>12</LangVersion>
     <NoWarn>$(NoWarn);NETSDK1138;CS1591</NoWarn>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <PackageId>Cron.Extensions.Expressions</PackageId>
     <Authors>Scott Offen</Authors>
+    <Owners>Scott Offen</Owners>
     <Copyright>© 2024 - $([System.DateTime]::Now.ToString('yyyy')) Scott Offen</Copyright>
-    <Description>Easily create Kubernetes supported cron expressions.</Description>
+    <Description>Fluent CRON expression builder for .NET</Description>
     <PackageTags>Kubernetes k8s cron crontab expression expressions cronexpression cronexpressions</PackageTags>
     <AssemblyVersion>$(Version)</AssemblyVersion>
     <FileVersion>$(Version)</FileVersion>
@@ -22,23 +24,27 @@
     <PublishRepositoryUrl>true</PublishRepositoryUrl>
     <RepositoryUrl>https://github.com/scottoffen/cron-extensions-expressions</RepositoryUrl>
     <PackageProjectUrl>https://github.com/scottoffen/cron-extensions-expressions</PackageProjectUrl>
+    <PackageIcon>cron-extensions-expressions.png</PackageIcon>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <IncludeSymbols>true</IncludeSymbols>
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+    <EnablePackageValidation>true</EnablePackageValidation>
+    <AnalysisLevel>latest</AnalysisLevel>
+    <Deterministic>true</Deterministic>
+    <EmbedUntrackedSources>true</EmbedUntrackedSources>
   </PropertyGroup>
 
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-    <LangVersion>latestmajor</LangVersion>
-    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-  </PropertyGroup>
-
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-    <LangVersion>latestmajor</LangVersion>
-    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  <PropertyGroup Condition="'$(GITHUB_ACTIONS)' == 'true'">
+    <ContinuousIntegrationBuild>true</ContinuousIntegrationBuild>
   </PropertyGroup>
 
   <ItemGroup>
-    <None Include="README.md" Pack="true" PackagePath="" />
+    <None Include="..\..\cron-extensions-expressions.png" Pack="true" PackagePath="\" />
+    <None Include="README.md" Pack="true" PackagePath="\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="8.0.0" PrivateAssets="All" />
   </ItemGroup>
 
 </Project>
