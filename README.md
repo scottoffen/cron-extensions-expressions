@@ -1,4 +1,4 @@
-# ![Logo](https://raw.githubusercontent.com/scottoffen/cron-extensions-expressions/main/cron-extensions-expressions-25x25.png) Cron.Extensions.Expressions
+# Cron.Extensions.Expressions
 
 Easily create and parse cron expressions using a fluent syntax.
 
