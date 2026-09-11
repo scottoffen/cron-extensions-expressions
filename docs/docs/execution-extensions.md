@@ -1,6 +1,6 @@
 ---
 sidebar_position: 6
-title: Execution Inquiry
+title: Execution Extensions
 ---
 
 Helpers for evaluating a `CronExpression` against dates and computing the next scheduled run time.
@@ -15,7 +15,9 @@ Helpers for evaluating a `CronExpression` against dates and computing the next s
 These methods operate with minute-level precision and consider all five cron fields (minute, hour, day, month, and day of week), combining the two day fields as standard cron does.
 
 :::important
+
 Returned times always have seconds set to `00`, and the seconds component of an input is ignored when matching.
+
 :::
 
 ## Method reference
@@ -37,18 +39,22 @@ Computes the next occurrence at minute precision. If `start` is omitted, the cur
 * The result is always **strictly after** `start`. The method never returns `start` itself.
 * That comparison is made at full precision, including seconds. If `start` falls partway through a minute that the expression matches, the already-started minute is treated as past and the search continues to the following match. With `*/15`, a `start` of `10:15:32` returns `10:30:00`, not `10:15:00`.
 
-:::warning Daylight saving time
+:::warning[Daylight saving time]
+
 Time arithmetic uses ordinary `DateTime` addition, which applies no daylight saving time rules.
 
 When `start` has a `Kind` of `DateTimeKind.Local` and the next run lands in an hour that the local zone skips (for example 2:00 AM on a spring-forward day), the returned value may be a time that does not exist locally. When it lands in a repeated hour (for example 1:30 AM on a fall-back day), the result is ambiguous.
 
 For predictable behavior across DST boundaries, pass a `start` with `DateTimeKind.Utc`.
+
 :::
 
-:::danger Unsatisfiable expressions
+:::danger[Unsatisfiable expressions]
+
 `GetNextExecution` has no termination guard. An expression that can never match, such as `Day = "30"` with `Month = "2"`, causes the search to loop forever.
 
 `ToCronExpression()` is the check that rejects impossible day/month pairs, so call it before scheduling any expression assembled from untrusted or computed input.
+
 :::
 
 ## WillRunOn
@@ -122,7 +128,7 @@ var nextSemi = semiMonthly9.GetNextExecution(new DateTime(2025, 10, 15, 9, 0, 0)
 ## Notes & caveats
 
 * **Day/DayOfWeek matching:** These two fields are combined with OR, following standard cron. See [Day and day of week](#day-and-day-of-week) below.
-* **DayOfWeek's 7-for-Sunday alias:** `0` and `7` are both treated as Sunday when matching, even though only `0` ever comes back from `DateTime.DayOfWeek`. This applies within lists and ranges too, so `"5-7"` matches Friday, Saturday, and Sunday.
+* **DayOfWeek's 7-for-Sunday alias:** See [Matching rules](#matching-rules) above - `0` and `7` are treated as equivalent when matching, including within lists and ranges.
 * **Validation:** Assumes a valid `CronExpression`. These methods perform no validation of their own; invalid combinations are expected to have failed earlier, at assignment or at `ToCronExpression()`.
 * **Local vs UTC:** Uses the provided `DateTime.Kind` and performs no timezone conversion. See the daylight saving time warning above before using a local `start`.
 * **Step matching:** A step matches `start`, then every `step` values after it, and never a value below `start`. For `*/n` the start is the field's own minimum, which is `0` for minute, hour, and day of week, but `1` for day of month and month.

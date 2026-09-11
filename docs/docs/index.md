@@ -6,7 +6,9 @@ title: Cron.Extensions.Expressions
 Easily create and parse cron expressions using a fluent syntax.
 
 :::important
+
 This library currently only supports Kubernetes cron expressions.
+
 :::
 
 ## Cron Expressions
@@ -28,11 +30,10 @@ The typical format of a cron expression is:
 
 Remembering how to construct and parse these expressions can be tricky. This package provides the `CronExpression` class to simplify that.
 
-:::danger Warning
-Values for each property will be validated for both format and range before being assigned. An exception will be thrown if the format or value is not valid for the property. E.g.
-- minutes must be between 0 and 59, otherwise `ArgumentOutOfRangeException`
-- range start values must be **strictly** less than end values, so `5-5` is rejected with `ArgumentOutOfRangeException`
-- day of week does not support step values; `*/2` or `1/2` in that field throws `NotSupportedException`
+:::danger[Warning]
 
-Only `*`, digits, `,`, `-`, and `/` are recognized. Names such as `MON`, macros such as `@daily`, and tokens such as `?` or `L` are not supported. See [`CronExpression`](./cron-expressions.md) for the complete grammar and the full list of exceptions.
+Values for each property are validated for both format and range before being assigned - an exception is thrown immediately if a value isn't valid for that property, rather than later when the expression is used.
+
+See [`CronExpression`](./cron-expressions.md) for the complete grammar, valid ranges, and the full list of exceptions.
+
 :::

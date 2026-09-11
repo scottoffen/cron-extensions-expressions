@@ -26,19 +26,23 @@ var text = expr.ToCronExpression(); // "*/15 * * * *"
 | Method                                    | Effect on `CronExpression`                                                                  | Valid range                  |
 | ----------------------------------------- | ------------------------------------------------------------------------------------------- | ---------------------------- |
 | `EveryMinute()`                           | `Minute = "*"`                                                                              | —                            |
-| `EveryXMinutes(int increment)`            | `Minute = "*/{increment}"` (uses `EveryMinute()` when `increment == 1`)                     | 0–59                         |
-| `EveryXMinutes(int start, int increment)` | `Minute = "{start}/{increment}"` (uses `EveryMinute()` when `start == 1 && increment == 1`) | start: 0–59, increment: 0–59 |
+| `EveryXMinutes(int increment)`            | `Minute = "*/{increment}"` (uses `EveryMinute()` when `increment == 1`)                     | 0-59                         |
+| `EveryXMinutes(int start, int increment)` | `Minute = "{start}/{increment}"` (uses `EveryMinute()` when `start == 1 && increment == 1`) | start: 0-59, increment: 0-59 |
 | `EveryHour()`                             | `Hour = "*"`                                                                                | —                            |
-| `EveryXHours(int increment)`              | `Hour = "*/{increment}"` (uses `EveryHour()` when `increment == 1`)                         | 0–23                         |
-| `EveryXHours(int start, int increment)`   | `Hour = "{start}/{increment}"` (uses `EveryHour()` when `start == 1 && increment == 1`)     | start: 0–23, increment: 0–23 |
+| `EveryXHours(int increment)`              | `Hour = "*/{increment}"` (uses `EveryHour()` when `increment == 1`)                         | 0-23                         |
+| `EveryXHours(int start, int increment)`   | `Hour = "{start}/{increment}"` (uses `EveryHour()` when `start == 1 && increment == 1`)     | start: 0-23, increment: 0-23 |
 | `EveryDay()`                              | `Day = "*"`                                                                                 | —                            |
-| `EveryXDays(int increment)`               | `Day = "*/{increment}"` (uses `EveryDay()` when `increment == 1`)                           | 1–31                         |
-| `EveryXDays(int start, int increment)`    | `Day = "{start}/{increment}"` (uses `EveryDay()` when `start == 1 && increment == 1`)       | start: 1–31, increment: 1–31 |
+| `EveryXDays(int increment)`               | `Day = "*/{increment}"` (uses `EveryDay()` when `increment == 1`)                           | 1-31                         |
+| `EveryXDays(int start, int increment)`    | `Day = "{start}/{increment}"` (uses `EveryDay()` when `start == 1 && increment == 1`)       | start: 1-31, increment: 1-31 |
 | `EveryMonth()`                            | `Month = "*"`                                                                               | —                            |
-| `EveryXMonths(int increment)`             | `Month = "*/{increment}"` (uses `EveryMonth()` when `increment == 1`)                       | 1–12                         |
-| `EveryXMonths(int start, int increment)`  | `Month = "{start}/{increment}"` (uses `EveryMonth()` when `start == 1 && increment == 1`)   | start: 1–12, increment: 1–12 |
+| `EveryXMonths(int increment)`             | `Month = "*/{increment}"` (uses `EveryMonth()` when `increment == 1`)                       | 1-12                         |
+| `EveryXMonths(int start, int increment)`  | `Month = "{start}/{increment}"` (uses `EveryMonth()` when `start == 1 && increment == 1`)   | start: 1-12, increment: 1-12 |
 
-> There are deliberately no day-of-week increment helpers. Step syntax is not valid in the `DayOfWeek` field, and assigning something like `*/2` to it throws `NotSupportedException`. To restrict the day of week, use [`OnDaysOfWeek`](./list-extensions.md) for a list or [`RangeOfWeek`](./range-extensions.md) for a range. These methods leave `DayOfWeek` untouched.
+:::tip[No day-of-week increment helpers]
+
+There are deliberately no day-of-week increment helpers. Step syntax is not valid in the `DayOfWeek` field, and assigning something like `*/2` to it throws `NotSupportedException`. To restrict the day of week, use [`OnDaysOfWeek`](./list-extensions.md) for a list or [`RangeOfWeek`](./range-extensions.md) for a range. These methods leave `DayOfWeek` untouched.
+
+:::
 
 ## Usage examples
 
@@ -85,15 +89,18 @@ var text = every3DaysAt8.ToCronExpression(); // "0 8 */3 * *"
 
 Assigning out-of-range values results in exceptions from the `CronExpression` properties. For example:
 
-* Minute and hour values must be within 0–59 and 0–23, respectively.
-* Day values must be within 1–31; month values within 1–12.
+* Minute and hour values must be within 0-59 and 0-23, respectively.
+* Day values must be within 1-31; month values within 1-12.
 * An `increment` of `0` always throws. For minutes and hours it fails because an interval must be greater than `0`; for days and months it fails the field's 1-based range check first. Either way the exception is `ArgumentOutOfRangeException`.
 * An `increment` larger than the field's maximum also throws, so `EveryXMinutes(60)` is rejected.
 * `ToCronExpression()` checks that a specified day is valid for the specified month, but only when the day is a single numeric value. A day written as a step, such as the `*/3` produced by `EveryXDays(3)`, skips that check.
+* These methods perform no additional parameter checks beyond setting the corresponding cron field - an invalid `start` or `increment` fails during property validation, not before.
 
-> A `*/n` step counts from the field's own minimum, which is `1` for days and months. `EveryXDays(2)` produces `*/2`, which selects the 1st, 3rd, 5th and so on through the 31st, **not** the even-numbered days. Likewise `EveryXMonths(2)` selects January, March, May, and so on. Minutes and hours have a minimum of `0`, so `EveryXMinutes(15)` selects 0, 15, 30, and 45 as you would expect. Use the two-argument overload when you want to pick the starting value yourself, as in `EveryXDays(2, 2)` for the even days.
+:::note[A `*/n` step counts from the field's minimum]
 
-> These methods do not perform additional parameter checks beyond setting the corresponding cron field. If you pass an invalid `start` or `increment`, the assignment will fail during property validation.
+`EveryXDays(2)` produces `*/2`, which selects the 1st, 3rd, 5th and so on through the 31st, **not** the even-numbered days. Likewise `EveryXMonths(2)` selects January, March, May, and so on. Minutes and hours have a minimum of `0`, so `EveryXMinutes(15)` selects 0, 15, 30, and 45 as you would expect. Use the two-argument overload when you want to pick the starting value yourself, as in `EveryXDays(2, 2)` for the even days.
+
+:::
 
 ## Design notes
 

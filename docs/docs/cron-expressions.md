@@ -30,24 +30,28 @@ This library uses the standard 5‑field format that Kubernetes CronJobs expect.
 
 | Field     | Property    | Allowed examples                    | Step syntax | Valid range           |
 | --------- | ----------- | ----------------------------------- | ----------- | --------------------- |
-| Minute    | `Minute`    | `*`, `0`, `*/5`, `0,15,30`, `10-20` | Yes         | 0–59                  |
-| Hour      | `Hour`      | `*`, `0`, `*/4`, `9,17`, `6-18`     | Yes         | 0–23                  |
-| Day (DOM) | `Day`       | `*`, `1`, `1,15`, `1-31`, `*/2`     | Yes         | 1–31                  |
-| Month     | `Month`     | `*`, `1`, `1,6,12`, `1-12`, `*/3`   | Yes         | 1–12                  |
-| DayOfWeek | `DayOfWeek` | `*`, `0`, `1-5`, `0,6`, `7`         | **No**      | 0–7 (Sunday–Saturday) |
+| Minute    | `Minute`    | `*`, `0`, `*/5`, `0,15,30`, `10-20` | Yes         | 0-59                  |
+| Hour      | `Hour`      | `*`, `0`, `*/4`, `9,17`, `6-18`     | Yes         | 0-23                  |
+| Day (DOM) | `Day`       | `*`, `1`, `1,15`, `1-31`, `*/2`     | Yes         | 1-31                  |
+| Month     | `Month`     | `*`, `1`, `1,6,12`, `1-12`, `*/3`   | Yes         | 1-12                  |
+| DayOfWeek | `DayOfWeek` | `*`, `0`, `1-5`, `0,6`, `7`         | **No**      | 0-7 (Sunday-Saturday) |
 
 If a value is outside of these ranges or invalid for its position, the property setter throws a `FormatException`, `ArgumentOutOfRangeException`, or `NotSupportedException`. This ensures that all expressions are valid according to Kubernetes conventions.
 
 A comma‑separated list is validated one element at a time, so each element may itself be a single value, a range, or a step. For example, `5-10,15-31` and `0,30,*/15` are both accepted.
 
-:::note DayOfWeek accepts 7 as an alias for Sunday
+:::note[DayOfWeek accepts 7 as an alias for Sunday]
+
 Per the cron specification, both `0` and `7` mean Sunday in the `DayOfWeek` field. `7` is stored and reflected exactly as assigned - setting `DayOfWeek = "7"` keeps `DayOfWeek == "7"`, and `ToCronExpression()` reflects it too. `7` remains a distinct value through validation and storage, which is what lets a range correctly span into Sunday: `DayOfWeek = "5-7"` means Friday, Saturday, and Sunday, the same as `"5,6,0"` would. The equivalence between `0` and `7` is applied only when matching an actual date (`WillRunOn`, `GetNextExecution`) - an actual Sunday satisfies either representation, alone, in a list, or at the end of a range.
+
 :::
 
-:::note Day and day of week are combined with OR
+:::note[Day and day of week are combined with OR]
+
 When both `Day` and `DayOfWeek` are set to something other than `*`, a date matches if **either** one matches, following standard cron. `0 9 1 * 1` therefore runs on the 1st of the month **and** on every Monday, not only on a Monday that falls on the 1st.
 
-If only one of the two is restricted, that field alone decides. See [Execution Inquiry](./execution-inquiry.md#day-and-day-of-week) for the full rule.
+If only one of the two is restricted, that field alone decides. See [Execution Extensions](./execution-extensions.md#day-and-day-of-week) for the full rule.
+
 :::
 
 ### Unsupported syntax
@@ -65,7 +69,7 @@ This library implements a deliberately small grammar. The only characters accept
 
 Expressions always have exactly five fields; there is no seconds mode. A step interval is validated against the range of the field it applies to, so `*/60` in the minute field throws even though `60` looks like a plausible interval.
 
-:::important Invalid Day of Month
+:::important[Invalid Day of Month]
 
 The `ToCronExpression()` method also checks that the specified day can actually occur in the specified month. This check runs **only when `Day` is a single numeric value**. If `Day` is `*`, a list, a range, or a step, the check is skipped entirely.
 
@@ -127,23 +131,6 @@ if (!CronExpression.TryParse("invalid value", out var result))
 
 `TryParse` returns `false` for all of these cases and sets `expression` to `null`; it never throws.
 
-## Validation behavior
-
-Setting any field automatically validates that field's syntax and numeric ranges. Validation errors occur immediately at assignment, or when `ToCronExpression()` confirms that a specified day/month combination is valid.
-
-| Scenario                                                              | Exception                                                 |
-| ---------------------------------------------------------------------- | --------------------------------------------------------- |
-| Invalid syntax or non‑numeric token (`a`, `1a`, `1-2-3`, `1/2/3`)       | `FormatException`                                         |
-| Value outside the allowed range (`8` for `DayOfWeek`)                   | `ArgumentOutOfRangeException`                             |
-| Range start not less than end (`6-3`, `5-5`)                           | `ArgumentOutOfRangeException`                             |
-| Step interval of `0`                                                    | `ArgumentOutOfRangeException`                             |
-| Step syntax on `DayOfWeek` (`*/1`, `1/2`)                              | `NotSupportedException`                                   |
-| Day invalid for every selected month                                    | `ArgumentOutOfRangeException` (from `ToCronExpression()`) |
-
-Every syntax error - including a malformed step like `1/2/3` - is caught by the property setter itself, before `ToCronExpression()` is ever called. The only validation `ToCronExpression()` performs on its own is the day/month cross-check described above.
-
-This ensures that all cron expressions are syntactically and semantically valid before use.
-
 ## Common recipes
 
 ```csharp
@@ -196,14 +183,24 @@ Each property automatically validates the assigned value.
 * Properties can be set directly for advanced cases (e.g., mixed lists and ranges).
 * Assignments are validated immediately.
 * `DayOfWeek` does not support step syntax; assigning `*/2` to it throws `NotSupportedException`.
-* `DayOfWeek` accepts `7` as an alias for Sunday and keeps it exactly as assigned - it is not rewritten to `0`. This is what allows `"5-7"` to validate and mean Friday through Sunday; the `0`/`7` equivalence is applied only when matching an actual date, not at assignment.
+* `DayOfWeek` accepts `7` as an alias for Sunday and keeps it exactly as assigned - see the note above.
 * `ToString()` is not overridden. Call `ToCronExpression()` to render the expression.
 * The type is mutable and not thread‑safe. Treat instances as short‑lived builders or confine them to a single thread.
 * Validation is eager and automatic to help surface configuration mistakes early.
 
-## Troubleshooting
+## Validation behavior
 
-* **`FormatException` while setting a property** - The value contains characters or syntax not permitted for that field. Check for names such as `MON`, macros such as `@daily`, a range combined with a step such as `1-10/2`, or a step with more than one `/` such as `1/2/3`.
-* **`ArgumentOutOfRangeException` while setting a property** - The numeric value is outside the allowed range, or a range's start is not strictly less than its end. Note that for `DayOfWeek`, `7` is a legal value in its own right (an alias for Sunday), so `"5-7"` is a valid range and does not fall into this category.
-* **`NotSupportedException` while setting `DayOfWeek`** - Step syntax is not available for this field. Use a list (`1,3,5`) or a range (`1-5`) instead.
-* **`ArgumentOutOfRangeException` from `ToCronExpression()`** - The day cannot occur in any of the selected months. Adjust the day, or widen the month field to include a month that has that day.
+Setting any field automatically validates that field's syntax and numeric ranges. Validation errors occur immediately at assignment, or when `ToCronExpression()` confirms that a specified day/month combination is valid.
+
+| Scenario                                                        | Exception                                                 | Notes                                                              |
+| ------------------------------------------------------------------ | --------------------------------------------------------- | ------------------------------------------------------------------- |
+| Invalid syntax or non‑numeric token (`a`, `1a`, `1-2-3`, `1/2/3`)   | `FormatException`                                          | Check for names such as `MON`, macros such as `@daily`, a range combined with a step (`1-10/2`), or a step with more than one `/` (`1/2/3`). |
+| Value outside the allowed range (`8` for `DayOfWeek`)               | `ArgumentOutOfRangeException`                              | `DayOfWeek`'s valid range is 0-7 (`7` is legal in its own right - see the note above); `8` and above are genuinely out of range. |
+| Range start not less than end (`6-3`, `5-5`)                       | `ArgumentOutOfRangeException`                              | To express a single value, assign that value directly rather than as a range. |
+| Step interval of `0`, or larger than the field's maximum            | `ArgumentOutOfRangeException`                              | An interval must be at least `1` and no greater than the field's own maximum, e.g. `EveryXMinutes(60)`-style values fail. |
+| Step syntax on `DayOfWeek` (`*/1`, `1/2`)                          | `NotSupportedException`                                    | Use a list (`1,3,5`) or a range (`1-5`) instead.                    |
+| Day invalid for every selected month                                | `ArgumentOutOfRangeException` (from `ToCronExpression()`)  | Adjust the day, or widen the month field to include one that has that day. |
+
+Every syntax error - including a malformed step like `1/2/3` - is caught by the property setter itself, before `ToCronExpression()` is ever called. The only validation `ToCronExpression()` performs on its own is the day/month cross-check described above.
+
+This ensures that all cron expressions are syntactically and semantically valid before use.

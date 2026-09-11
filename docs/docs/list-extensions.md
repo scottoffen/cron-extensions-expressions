@@ -26,11 +26,11 @@ var text = expr.ToCronExpression(); // "0,30 9,17 1,15 1,7 1,3,5"
 
 | Method                                  | Field modified | Example input   | Resulting cron field | Valid range           |
 | --------------------------------------- | -------------- | --------------- | -------------------- | --------------------- |
-| `OnMinutes(params int[] minutes)`       | Minute         | `0, 15, 30, 45` | `0,15,30,45`         | 0–59                  |
-| `OnHours(params int[] hours)`           | Hour           | `6, 12, 18`     | `6,12,18`            | 0–23                  |
-| `OnDays(params int[] days)`             | Day of month   | `1, 15, 31`     | `1,15,31`            | 1–31                  |
-| `OnMonths(params int[] months)`         | Month          | `1, 6, 12`      | `1,6,12`             | 1–12                  |
-| `OnDaysOfWeek(params int[] daysOfWeek)` | Day of week    | `1, 3, 5`       | `1,3,5`              | 0–7 (Sunday–Saturday) |
+| `OnMinutes(params int[] minutes)`       | Minute         | `0, 15, 30, 45` | `0,15,30,45`         | 0-59                  |
+| `OnHours(params int[] hours)`           | Hour           | `6, 12, 18`     | `6,12,18`            | 0-23                  |
+| `OnDays(params int[] days)`             | Day of month   | `1, 15, 31`     | `1,15,31`            | 1-31                  |
+| `OnMonths(params int[] months)`         | Month          | `1, 6, 12`      | `1,6,12`             | 1-12                  |
+| `OnDaysOfWeek(params int[] daysOfWeek)` | Day of week    | `1, 3, 5`       | `1,3,5`              | 0-7 (Sunday-Saturday) |
 
 Each call overwrites the corresponding field of the current `CronExpression`. The provided values are automatically sorted and deduplicated.
 
@@ -63,7 +63,7 @@ new CronExpression()
 You can chain these with methods from [`IncrementExtensions`](./increment-extensions.md) to build more specific schedules.
 
 ```csharp
-// Every 15 minutes on weekdays (Monday–Friday)
+// Every 15 minutes on weekdays (Monday-Friday)
 new CronExpression()
     .EveryXMinutes(15)
     .OnDaysOfWeek(1, 2, 3, 4, 5)
@@ -74,16 +74,20 @@ new CronExpression()
 
 * Each method replaces the existing field with a comma-separated list of numeric values.
 * Invalid or out-of-range values cause an exception when the corresponding field on `CronExpression` is set.
-* Duplicate values are automatically removed.
-* The order of values in the final cron expression is always ascending.
+* Duplicate values are automatically removed and sorted ascending, e.g. `OnHours(12, 6, 6)` results in `Hour = "6,12"`.
 * Calling a method with no values produces an empty field, which the property setter rejects with a `FormatException`. Guard against passing an empty array.
 
-> Example: `OnHours(12, 6, 6)` results in `Hour = "6,12"`.
+:::note[A single value re-enables the day/month calendar check]
 
-> A single value is written without separators, so `OnDays(15)` sets `Day = "15"`. Because that is a single numeric day, it re-enables the day/month calendar check performed by `ToCronExpression()`.
+A single value is written without separators, so `OnDays(15)` sets `Day = "15"`. Because that is a single numeric day, it re-enables the day/month calendar check performed by `ToCronExpression()`.
 
-> `OnDaysOfWeek` treats `0` and `7` as distinct values, same as `DayOfWeek` itself - both represent Sunday, but neither is rewritten to the other, so `OnDaysOfWeek(0, 7)` keeps both and sorts to `"0,7"` rather than collapsing to a single `0`. See [`CronExpression`](./cron-expressions.md) for how `0`/`7` equivalence is applied when matching.
+:::
 
+:::note[OnDaysOfWeek and the 7-for-Sunday alias]
+
+`OnDaysOfWeek` treats `0` and `7` as distinct values, since neither is rewritten to the other - `OnDaysOfWeek(0, 7)` keeps both and sorts to `"0,7"` rather than collapsing to a single `0`. See [`CronExpression`](./cron-expressions.md) for how the `0`/`7` equivalence for Sunday works.
+
+:::
 
 ## Design notes
 

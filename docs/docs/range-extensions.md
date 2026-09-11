@@ -7,7 +7,7 @@ Fluent helpers for defining contiguous ranges in a `CronExpression`. These metho
 
 ## Overview
 
-`RangeExtensions` provides `RangeOf*` methods for all five cron fields: minutes, hours, days, months, and days of the week. Each method replaces the corresponding field on the `CronExpression` with a start–end range string.
+`RangeExtensions` provides `RangeOf*` methods for all five cron fields: minutes, hours, days, months, and days of the week. Each method replaces the corresponding field on the `CronExpression` with a start-end range string.
 
 ```csharp
 using Cron.Extensions.Expressions;
@@ -26,15 +26,19 @@ var text = expr.ToCronExpression(); // "0-30 8-17 1-15 1-6 1-5"
 
 | Method                               | Field modified | Example input | Resulting cron field | Valid range           |
 | ------------------------------------ | -------------- | ------------- | -------------------- | --------------------- |
-| `RangeOfMinutes(int start, int end)` | Minute         | `0, 30`       | `0-30`               | 0–59                  |
-| `RangeOfHours(int start, int end)`   | Hour           | `8, 17`       | `8-17`               | 0–23                  |
-| `RangeOfDays(int start, int end)`    | Day of month   | `1, 15`       | `1-15`               | 1–31                  |
-| `RangeOfMonths(int start, int end)`  | Month          | `1, 6`        | `1-6`                | 1–12                  |
-| `RangeOfWeek(int start, int end)`    | Day of week    | `1, 5`        | `1-5`                | 0–7 (Sunday–Saturday) |
+| `RangeOfMinutes(int start, int end)` | Minute         | `0, 30`       | `0-30`               | 0-59                  |
+| `RangeOfHours(int start, int end)`   | Hour           | `8, 17`       | `8-17`               | 0-23                  |
+| `RangeOfDays(int start, int end)`    | Day of month   | `1, 15`       | `1-15`               | 1-31                  |
+| `RangeOfMonths(int start, int end)`  | Month          | `1, 6`        | `1-6`                | 1-12                  |
+| `RangeOfWeek(int start, int end)`    | Day of week    | `1, 5`        | `1-5`                | 0-7 (Sunday-Saturday) |
 
 Each method overwrites the target field and returns the same `CronExpression` instance, allowing fluent chaining.
 
-> Note the name: the day-of-week method is `RangeOfWeek`, not `RangeOfDaysOfWeek`. Its list counterpart on [`ListExtensions`](./list-extensions.md) is `OnDaysOfWeek`.
+:::tip[RangeOfWeek, not RangeOfDaysOfWeek]
+
+The day-of-week method is named `RangeOfWeek`. Its list counterpart on [`ListExtensions`](./list-extensions.md) is `OnDaysOfWeek`.
+
+:::
 
 ## Usage examples
 
@@ -53,7 +57,7 @@ new CronExpression().RangeOfDays(1, 15).ToCronExpression(); // "* * 1-15 * *"
 // Run between January and June
 new CronExpression().RangeOfMonths(1, 6).ToCronExpression(); // "* * * 1-6 *"
 
-// Weekdays only (Monday–Friday)
+// Weekdays only (Monday-Friday)
 new CronExpression().RangeOfWeek(1, 5).ToCronExpression(); // "* * * * 1-5"
 ```
 
@@ -77,9 +81,17 @@ new CronExpression()
 * Validation happens immediately. The `RangeOf*` method assigns to the underlying property, and the property setter validates on assignment, so an invalid range throws from the `RangeOf*` call itself rather than later from `ToCronExpression()`.
 * Ranges are inclusive of both bounds.
 
-> Setting a **range** in the day field disables the day/month calendar check. `ToCronExpression()` only verifies that a day can occur in the selected months when `Day` is a single numeric value, so `RangeOfDays(29, 31)` combined with February is not reported as an error. See [`CronExpression`](./cron-expressions.md) for the full rule.
+:::note[Setting a range disables the day/month calendar check]
 
-> `RangeOfWeek` supports `7` as the end of a range to reach Sunday: `RangeOfWeek(5, 7)` produces `"5-7"` and correctly means Friday through Sunday. See [`CronExpression`](./cron-expressions.md) for how the `0`/`7` equivalence for Sunday is applied.
+`ToCronExpression()` only verifies that a day can occur in the selected months when `Day` is a single numeric value, so setting a **range** in the day field skips that check: `RangeOfDays(29, 31)` combined with February is not reported as an error. See [`CronExpression`](./cron-expressions.md) for the full rule.
+
+:::
+
+:::note[RangeOfWeek and the 7-for-Sunday alias]
+
+`RangeOfWeek` supports `7` as the end of a range to reach Sunday: `RangeOfWeek(5, 7)` produces `"5-7"`, meaning Friday through Sunday. See [`CronExpression`](./cron-expressions.md) for how the `0`/`7` equivalence for Sunday works.
+
+:::
 
 ## Design notes
 
