@@ -29,8 +29,10 @@ The typical format of a cron expression is:
 Remembering how to construct and parse these expressions can be tricky. This package provides the `CronExpression` class to simplify that.
 
 :::danger Warning
-Values for each property will be validated for both format and range before being assigned. An exception will be thrown if the format or value is not valid for the property. E.g. 
-- minutes must be between 0 and 59
-- range start values must be less than end values
-- day of week does not support increment values.
+Values for each property will be validated for both format and range before being assigned. An exception will be thrown if the format or value is not valid for the property. E.g.
+- minutes must be between 0 and 59, otherwise `ArgumentOutOfRangeException`
+- range start values must be **strictly** less than end values, so `5-5` is rejected with `ArgumentOutOfRangeException`
+- day of week does not support step values; `*/2` or `1/2` in that field throws `NotSupportedException`
+
+Only `*`, digits, `,`, `-`, and `/` are recognized. Names such as `MON`, macros such as `@daily`, and tokens such as `?` or `L` are not supported. See [`CronExpression`](./cron-expressions.md) for the complete grammar and the full list of exceptions.
 :::

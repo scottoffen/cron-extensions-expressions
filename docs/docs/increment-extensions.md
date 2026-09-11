@@ -38,7 +38,7 @@ var text = expr.ToCronExpression(); // "*/15 * * * *"
 | `EveryXMonths(int increment)`             | `Month = "*/{increment}"` (uses `EveryMonth()` when `increment == 1`)                       | 1–12                         |
 | `EveryXMonths(int start, int increment)`  | `Month = "{start}/{increment}"` (uses `EveryMonth()` when `start == 1 && increment == 1`)   | start: 1–12, increment: 1–12 |
 
-> These methods do not alter `DayOfWeek`. If you also need weekday/weekend behavior, set `DayOfWeek` on the `CronExpression` directly.
+> There are deliberately no day-of-week increment helpers. Step syntax is not valid in the `DayOfWeek` field, and assigning something like `*/2` to it throws `NotSupportedException`. To restrict the day of week, use [`OnDaysOfWeek`](./list-extensions.md) for a list or [`RangeOfWeek`](./range-extensions.md) for a range. These methods leave `DayOfWeek` untouched.
 
 ## Usage examples
 
@@ -87,7 +87,9 @@ Assigning out-of-range values results in exceptions from the `CronExpression` pr
 
 * Minute and hour values must be within 0–59 and 0–23, respectively.
 * Day values must be within 1–31; month values within 1–12.
-* `ToCronExpression()` checks that a specified day is valid for the specified month.
+* An `increment` of `0` always throws. For minutes and hours it fails because an interval must be greater than `0`; for days and months it fails the field's 1-based range check first. Either way the exception is `ArgumentOutOfRangeException`.
+* An `increment` larger than the field's maximum also throws, so `EveryXMinutes(60)` is rejected.
+* `ToCronExpression()` checks that a specified day is valid for the specified month, but only when the day is a single numeric value. A day written as a step, such as the `*/3` produced by `EveryXDays(3)`, skips that check.
 
 > These methods do not perform additional parameter checks beyond setting the corresponding cron field. If you pass an invalid `start` or `increment`, the assignment will fail during property validation.
 

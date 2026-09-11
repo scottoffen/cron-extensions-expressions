@@ -76,8 +76,11 @@ new CronExpression()
 * Invalid or out-of-range values cause an exception when the corresponding field on `CronExpression` is set.
 * Duplicate values are automatically removed.
 * The order of values in the final cron expression is always ascending.
+* Calling a method with no values produces an empty field, which the property setter rejects with a `FormatException`. Guard against passing an empty array.
 
 > Example: `OnHours(12, 6, 6)` results in `Hour = "6,12"`.
+
+> A single value is written without separators, so `OnDays(15)` sets `Day = "15"`. Because that is a single numeric day, it re-enables the day/month calendar check performed by `ToCronExpression()`.
 
 ## Design notes
 

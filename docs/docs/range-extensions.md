@@ -34,6 +34,8 @@ var text = expr.ToCronExpression(); // "0-30 8-17 1-15 1-6 1-5"
 
 Each method overwrites the target field and returns the same `CronExpression` instance, allowing fluent chaining.
 
+> Note the name: the day-of-week method is `RangeOfWeek`, not `RangeOfDaysOfWeek`. Its list counterpart on [`ListExtensions`](./list-extensions.md) is `OnDaysOfWeek`.
+
 ## Usage examples
 
 ### Common ranges
@@ -71,8 +73,11 @@ new CronExpression()
 ## Validation and behavior
 
 * Each range must use values within the allowed field range.
-* A range where the start value is greater than or equal to the end value will trigger an exception when the expression is validated.
-* Day and month ranges that produce invalid dates (e.g., February 30) will raise an error when `ToCronExpression()` is called.
+* The start value must be **strictly less than** the end value. `RangeOfHours(17, 8)` and `RangeOfHours(8, 8)` both throw `ArgumentOutOfRangeException`. To express a single value, use the corresponding list method instead, such as `OnHours(8)`.
+* Validation happens immediately. The `RangeOf*` method assigns to the underlying property, and the property setter validates on assignment, so an invalid range throws from the `RangeOf*` call itself rather than later from `ToCronExpression()`.
+* Ranges are inclusive of both bounds.
+
+> Setting a **range** in the day field disables the day/month calendar check. `ToCronExpression()` only verifies that a day can occur in the selected months when `Day` is a single numeric value, so `RangeOfDays(29, 31)` combined with February is not reported as an error. See [`CronExpression`](./cron-expressions.md) for the full rule.
 
 ## Design notes
 
