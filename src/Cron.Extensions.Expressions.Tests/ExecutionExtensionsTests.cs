@@ -1,3 +1,5 @@
+using Cron.Extensions.Expressions;
+
 namespace Cron.Extensions.Expressions.Tests;
 
 public class ExecutionExtensionsTests
@@ -62,6 +64,9 @@ public class ExecutionExtensionsTests
     [Fact]
     public void GetNextExecution_ShouldReturnNextRunTimeAfterDateWithHour()
     {
+        // Use a fixed date away from DST boundaries so AddHours(1) in the implementation doesn't cross transitions.
+        var baseDate = new DateTime(2026, 7, 15, 0, 0, 0, DateTimeKind.Local);
+
         for (var hour = 0; hour < 24; hour++)
         {
             var expression = new CronExpression
@@ -69,7 +74,8 @@ public class ExecutionExtensionsTests
                 Hour = hour.ToString()
             };
 
-            var now = GetNow();
+            // Set now to 30 minutes before the target hour (wrapping so hour=0 uses previous day 23:30).
+            var now = baseDate.AddHours((hour + 23) % 24).AddMinutes(30);
             var actual = expression.GetNextExecution(now);
 
             var expected = (now.Hour == hour)
@@ -83,6 +89,54 @@ public class ExecutionExtensionsTests
             actual.ShouldBe(expected);
             actual.Hour.ShouldBe(hour);
         }
+    }
+
+    [Fact]
+    public void GetNextExecution_WithUtcStart_ShouldReturnNextRunTimeInUtc()
+    {
+        // With UTC, there is no DST; arithmetic is unambiguous and correct.
+        var baseUtc = new DateTime(2026, 7, 15, 9, 30, 0, DateTimeKind.Utc);
+        var expression = new CronExpression { Hour = "10" };
+
+        var actual = expression.GetNextExecution(baseUtc);
+        var expected = new DateTime(2026, 7, 15, 10, 0, 0, DateTimeKind.Utc);
+
+        actual.ShouldBe(expected);
+        actual.Kind.ShouldBe(DateTimeKind.Utc);
+    }
+
+    [Fact]
+    public void GetNextExecution_WhenNextRunFallsInSkippedHour_MayReturnInvalidLocalTime()
+    {
+        // US Pacific: March 8 2026 2:00 AM does not exist (spring forward to 3:00 AM).
+        // The implementation uses DateTime.AddHours, which does not apply DST rules,
+        // so it can return 2:00 AM. This test documents that the returned time may be
+        // invalid in the given zone (callers can use TimeZoneInfo.IsInvalidTime to check).
+        TimeZoneInfo? pacific = null;
+        try
+        {
+            pacific = TimeZoneInfo.FindSystemTimeZoneById(
+                OperatingSystem.IsWindows() ? "Pacific Standard Time" : "America/Los_Angeles");
+        }
+        catch (TimeZoneNotFoundException)
+        {
+            return; // No Pacific zone on this system; skip test
+        }
+
+        // 1:30 AM Pacific on March 8 2026 = 9:30 UTC (PST is -08:00)
+        var startUtc = new DateTime(2026, 3, 8, 9, 30, 0, DateTimeKind.Utc);
+        var start = TimeZoneInfo.ConvertTimeFromUtc(startUtc, pacific);
+        var expression = new CronExpression { Hour = "2" };
+
+        var actual = expression.GetNextExecution(start);
+
+        actual.Year.ShouldBe(2026);
+        actual.Month.ShouldBe(3);
+        actual.Day.ShouldBe(8);
+        actual.Hour.ShouldBe(2);
+        actual.Minute.ShouldBe(0);
+        // In Pacific, 2:00 AM on this date is invalid (skipped by DST).
+        pacific.IsInvalidTime(actual).ShouldBeTrue();
     }
 
     [Fact]

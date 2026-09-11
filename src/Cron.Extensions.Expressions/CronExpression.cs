@@ -1,21 +1,32 @@
-using System.Diagnostics.CodeAnalysis;
+﻿using System.Diagnostics.CodeAnalysis;
 
 namespace Cron.Extensions.Expressions;
 
 /// <summary>
 /// Represents a Kubernetes-supported cron expression.
 /// </summary>
-public class CronExpression
+public sealed class CronExpression
 {
+    private static readonly char[] _separators = [' '];
+
     private string _minute = "*";
     private string _hour = "*";
     private string _day = "*";
     private string _month = "*";
     private string _dayOfWeek = "*";
 
-    public CronExpression() { }
-
-    public CronExpression(string? minute = null, string? hour = null, string? day = null, string? month = null, string? dayOfWeek = null) : this()
+    /// <summary>
+    /// Initializes a new instance of the <see cref="CronExpression"/> class with the specified values.
+    /// </summary>
+    /// <remarks>
+    /// Any component not provided defaults to "*", meaning "every" for that component in cron syntax.
+    /// </remarks>
+    /// <param name="minute">The minute component (0-59, or cron syntax). Defaults to "*".</param>
+    /// <param name="hour">The hour component (0-23, or cron syntax). Defaults to "*".</param>
+    /// <param name="day">The day of month component (1-31, or cron syntax). Defaults to "*".</param>
+    /// <param name="month">The month component (1-12, or cron syntax). Defaults to "*".</param>
+    /// <param name="dayOfWeek">The day of week component (0-6, or cron syntax). Defaults to "*".</param>
+    public CronExpression(string? minute = null, string? hour = null, string? day = null, string? month = null, string? dayOfWeek = null)
     {
         Minute = minute ?? "*";
         Hour = hour ?? "*";
@@ -100,10 +111,10 @@ public class CronExpression
     }
 
     /// <summary>
-    /// Converts the current instance to a cron expression.
+    /// Converts the current instance to a cron expression string.
     /// </summary>
-    /// <remarks>An <see cref="ArgumentOutOfRangeException"/> will be thrown if there is an explicit day and month in the cron expression, and the day is not valid for the month. E.g. February 30.</remarks>
-    /// <exception cref="ArgumentOutOfRangeException">Thrown when the day of the month is not valid for the specified month when an explicit day and month are provided.</exception>
+    /// <returns>A five-part cron expression string.</returns>
+    /// <exception cref="ArgumentOutOfRangeException">Thrown when an explicit day is not valid for the specified month (e.g., February 30).</exception>
     public string ToCronExpression()
     {
         FieldValidator.ValidateDayOfMonth(_day, _month);
@@ -111,14 +122,14 @@ public class CronExpression
     }
 
     /// <summary>
-    /// Parses a cron expression into a <see cref="CronExpression"/> instance.
+    /// Parses a cron expression string into a <see cref="CronExpression"/> instance.
     /// </summary>
-    /// <param name="value"></param>
-    /// <returns></returns>
-    /// <exception cref="FormatException"></exception>
+    /// <param name="value">The five-part cron expression string to parse.</param>
+    /// <returns>A new <see cref="CronExpression"/> instance.</returns>
+    /// <exception cref="FormatException">Thrown when the value does not contain exactly five space-separated parts.</exception>
     public static CronExpression Parse(string value)
     {
-        var parts = value.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        var parts = value.Split(_separators, StringSplitOptions.RemoveEmptyEntries);
         if (parts.Length != 5)
         {
             throw new FormatException($"Invalid cron expression. Found {parts.Length} parts instead of 5.");
@@ -128,11 +139,11 @@ public class CronExpression
     }
 
     /// <summary>
-    /// Tries to parse a cron expression into a <see cref="CronExpression"/> instance.
+    /// Attempts to parse a cron expression string into a <see cref="CronExpression"/> instance.
     /// </summary>
-    /// <param name="value"></param>
-    /// <param name="expression"></param>
-    /// <returns></returns>
+    /// <param name="value">The five-part cron expression string to parse.</param>
+    /// <param name="expression">When this method returns, contains the parsed expression if successful; otherwise, <c>null</c>.</param>
+    /// <returns><c>true</c> if the value was successfully parsed; otherwise, <c>false</c>.</returns>
     public static bool TryParse(string value, [NotNullWhen(true)] out CronExpression? expression)
     {
         try

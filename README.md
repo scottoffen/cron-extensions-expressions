@@ -2,10 +2,10 @@
 
 [![docs](https://img.shields.io/badge/docs-github.io-blue)](https://scottoffen.github.io/cron-expressions-extensions)
 [![NuGet](https://img.shields.io/nuget/v/Cron.Extensions.Expressions)](https://www.nuget.org/packages/Cron.Extensions.Expressions/)
-[![MIT](https://img.shields.io/github/license/scottoffen/cron-expressions-extensions?color=blue)](./LICENSE)
-[![Contributor Covenant](https://img.shields.io/badge/Contributor%20Covenant-2.1-blue.svg)](code_of_conduct.md)
+[![MIT](https://img.shields.io/github/license/scottoffen/cron-expressions-extensions?color=blue)](./LICENSE-MIT)
+[![Contributor Covenant](https://img.shields.io/badge/Contributor%20Covenant-2.1-blue.svg)](.github/code_of_conduct.md)
 
-Cron.Extensions.Expressions provides a fluent interface for building and parsing cron expressions.
+Utilities for building and parsing Kubernetes-compatible five-field cron expressions. Exposes a mutable CronExpression type and fluent extension methods for ranges, increments, lists, and execution evaluation.
 
 ## Installation
 
@@ -21,7 +21,7 @@ Cron.Extensions.Expressions is available on [NuGet.org](https://www.nuget.org/pa
 
 ## Contributing
 
-We welcome contributions from the community! In order to ensure the best experience for everyone, before creating an issue or submitting a pull request, please see the [contributing guidelines](CONTRIBUTING.md) and the [code of conduct](CODE_OF_CONDUCT.md). Failure to adhere to these guidelines can result in significant delays in getting your contributions included in the project.
+We welcome contributions from the community! In order to ensure the best experience for everyone, before creating an issue or submitting a pull request, please see the [contributing guidelines](.github/contributing.md) and the [code of conduct](.github/code_of_conduct.md). Failure to adhere to these guidelines can result in significant delays in getting your contributions included in the project.
 
 ## Versioning
 

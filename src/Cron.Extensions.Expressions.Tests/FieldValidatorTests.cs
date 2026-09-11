@@ -1,0 +1,308 @@
+﻿using Cron.Extensions.Expressions;
+
+namespace Cron.Extensions.Expressions.Tests;
+
+public class FieldValidatorTests
+{
+    #region GetMinValue / GetMaxValue
+
+    [Fact]
+    public void GetMinValue_ReturnsCorrectLimits_ForEachUnit()
+    {
+        FieldValidator.GetMinValue(Units.Minute).ShouldBe(0);
+        FieldValidator.GetMinValue(Units.Hour).ShouldBe(0);
+        FieldValidator.GetMinValue(Units.Day).ShouldBe(1);
+        FieldValidator.GetMinValue(Units.Month).ShouldBe(1);
+        FieldValidator.GetMinValue(Units.DayOfWeek).ShouldBe(0);
+    }
+
+    [Fact]
+    public void GetMaxValue_ReturnsCorrectLimits_ForEachUnit()
+    {
+        FieldValidator.GetMaxValue(Units.Minute).ShouldBe(59);
+        FieldValidator.GetMaxValue(Units.Hour).ShouldBe(23);
+        FieldValidator.GetMaxValue(Units.Day).ShouldBe(31);
+        FieldValidator.GetMaxValue(Units.Month).ShouldBe(12);
+        FieldValidator.GetMaxValue(Units.DayOfWeek).ShouldBe(6);
+    }
+
+    #endregion
+
+    #region Validate(string, Units) - wildcard
+
+    [Fact]
+    public void Validate_String_Wildcard_DoesNotThrow_ForAllUnits()
+    {
+        Should.NotThrow(() => FieldValidator.Validate("*", Units.Minute));
+        Should.NotThrow(() => FieldValidator.Validate("*", Units.Hour));
+        Should.NotThrow(() => FieldValidator.Validate("*", Units.Day));
+        Should.NotThrow(() => FieldValidator.Validate("*", Units.Month));
+        Should.NotThrow(() => FieldValidator.Validate("*", Units.DayOfWeek));
+    }
+
+    #endregion
+
+    #region Validate(string, Units) - single value
+
+    [Fact]
+    public void Validate_String_SingleValue_Valid_DoesNotThrow()
+    {
+        Should.NotThrow(() => FieldValidator.Validate("0", Units.Minute));
+        Should.NotThrow(() => FieldValidator.Validate("59", Units.Minute));
+        Should.NotThrow(() => FieldValidator.Validate("12", Units.Hour));
+        Should.NotThrow(() => FieldValidator.Validate("15", Units.Day));
+        Should.NotThrow(() => FieldValidator.Validate("6", Units.DayOfWeek));
+    }
+
+    [Fact]
+    public void Validate_String_SingleValue_OutOfRange_ThrowsArgumentOutOfRangeException()
+    {
+        Should.Throw<ArgumentOutOfRangeException>(() => FieldValidator.Validate("60", Units.Minute));
+        Should.Throw<ArgumentOutOfRangeException>(() => FieldValidator.Validate("24", Units.Hour));
+        Should.Throw<ArgumentOutOfRangeException>(() => FieldValidator.Validate("0", Units.Day));
+        Should.Throw<ArgumentOutOfRangeException>(() => FieldValidator.Validate("32", Units.Day));
+        Should.Throw<ArgumentOutOfRangeException>(() => FieldValidator.Validate("0", Units.Month));
+        Should.Throw<ArgumentOutOfRangeException>(() => FieldValidator.Validate("13", Units.Month));
+        Should.Throw<ArgumentOutOfRangeException>(() => FieldValidator.Validate("7", Units.DayOfWeek));
+    }
+
+    #endregion
+
+    #region Validate(string, Units) - comma list
+
+    [Fact]
+    public void Validate_String_CommaList_Valid_DoesNotThrow()
+    {
+        Should.NotThrow(() => FieldValidator.Validate("0,30,59", Units.Minute));
+        Should.NotThrow(() => FieldValidator.Validate("1,15,31", Units.Day));
+    }
+
+    [Fact]
+    public void Validate_String_CommaList_OneInvalid_ThrowsArgumentOutOfRangeException()
+    {
+        Should.Throw<ArgumentOutOfRangeException>(() => FieldValidator.Validate("0,60,59", Units.Minute));
+        Should.Throw<ArgumentOutOfRangeException>(() => FieldValidator.Validate("1,32,31", Units.Day));
+    }
+
+    #endregion
+
+    #region Validate(string, Units) - range
+
+    [Fact]
+    public void Validate_String_Range_Valid_DoesNotThrow()
+    {
+        Should.NotThrow(() => FieldValidator.Validate("0-59", Units.Minute));
+        Should.NotThrow(() => FieldValidator.Validate("8-17", Units.Hour));
+        Should.NotThrow(() => FieldValidator.Validate("1-31", Units.Day));
+        Should.NotThrow(() => FieldValidator.Validate("1-5", Units.DayOfWeek));
+    }
+
+    [Fact]
+    public void Validate_String_Range_StartGreaterThanOrEqualToEnd_ThrowsArgumentOutOfRangeException()
+    {
+        var ex = Should.Throw<ArgumentOutOfRangeException>(() => FieldValidator.Validate("10-5", Units.Minute));
+        ex.Message.ShouldContain("Start value 10");
+        ex.Message.ShouldContain("must be less than end value 5");
+
+        Should.Throw<ArgumentOutOfRangeException>(() => FieldValidator.Validate("5-5", Units.Hour));
+    }
+
+    [Fact]
+    public void Validate_String_Range_EndOutOfRange_ThrowsArgumentOutOfRangeException()
+    {
+        Should.Throw<ArgumentOutOfRangeException>(() => FieldValidator.Validate("0-60", Units.Minute));
+        Should.Throw<ArgumentOutOfRangeException>(() => FieldValidator.Validate("1-32", Units.Day));
+    }
+
+    [Fact]
+    public void Validate_String_Range_StartOutOfRange_ThrowsArgumentOutOfRangeException()
+    {
+        Should.Throw<ArgumentOutOfRangeException>(() => FieldValidator.Validate("60-59", Units.Minute));
+        Should.Throw<ArgumentOutOfRangeException>(() => FieldValidator.Validate("0-31", Units.Day));
+    }
+
+    #endregion
+
+    #region Validate(string, Units) - step/interval
+
+    [Fact]
+    public void Validate_String_Step_WildcardStart_Valid_DoesNotThrow()
+    {
+        Should.NotThrow(() => FieldValidator.Validate("*/5", Units.Minute));
+        Should.NotThrow(() => FieldValidator.Validate("*/2", Units.Hour));
+        Should.NotThrow(() => FieldValidator.Validate("*/10", Units.Day));
+    }
+
+    [Fact]
+    public void Validate_String_Step_NumericStart_Valid_DoesNotThrow()
+    {
+        Should.NotThrow(() => FieldValidator.Validate("0/15", Units.Minute));
+        Should.NotThrow(() => FieldValidator.Validate("5/10", Units.Day));
+    }
+
+    [Fact]
+    public void Validate_String_Step_DayOfWeek_ThrowsNotSupportedException()
+    {
+        Should.Throw<NotSupportedException>(() => FieldValidator.Validate("*/2", Units.DayOfWeek))
+            .Message.ShouldContain("Interval values are not supported for day of week");
+    }
+
+    [Fact]
+    public void Validate_String_Step_IntervalZero_ThrowsArgumentOutOfRangeException()
+    {
+        var ex = Should.Throw<ArgumentOutOfRangeException>(() => FieldValidator.Validate("*/0", Units.Minute));
+        ex.Message.ShouldContain("Interval value 0");
+        ex.Message.ShouldContain("must be greater than 0");
+    }
+
+    [Fact]
+    public void Validate_String_Step_StartOutOfRange_ThrowsArgumentOutOfRangeException()
+    {
+        Should.Throw<ArgumentOutOfRangeException>(() => FieldValidator.Validate("60/5", Units.Minute));
+    }
+
+    #endregion
+
+    #region Validate(int, Units)
+
+    [Fact]
+    public void Validate_Int_AtBoundaries_DoesNotThrow()
+    {
+        Should.NotThrow(() => FieldValidator.Validate(0, Units.Minute));
+        Should.NotThrow(() => FieldValidator.Validate(59, Units.Minute));
+        Should.NotThrow(() => FieldValidator.Validate(0, Units.Hour));
+        Should.NotThrow(() => FieldValidator.Validate(23, Units.Hour));
+        Should.NotThrow(() => FieldValidator.Validate(1, Units.Day));
+        Should.NotThrow(() => FieldValidator.Validate(31, Units.Day));
+        Should.NotThrow(() => FieldValidator.Validate(1, Units.Month));
+        Should.NotThrow(() => FieldValidator.Validate(12, Units.Month));
+        Should.NotThrow(() => FieldValidator.Validate(0, Units.DayOfWeek));
+        Should.NotThrow(() => FieldValidator.Validate(6, Units.DayOfWeek));
+    }
+
+    [Fact]
+    public void Validate_Int_BelowMin_ThrowsArgumentOutOfRangeException()
+    {
+        var ex = Should.Throw<ArgumentOutOfRangeException>(() => FieldValidator.Validate(-1, Units.Minute));
+        ex.Message.ShouldContain("Value -1");
+        ex.Message.ShouldContain("must be between 0 and 59");
+
+        Should.Throw<ArgumentOutOfRangeException>(() => FieldValidator.Validate(0, Units.Day));
+        Should.Throw<ArgumentOutOfRangeException>(() => FieldValidator.Validate(0, Units.Month));
+    }
+
+    [Fact]
+    public void Validate_Int_AboveMax_ThrowsArgumentOutOfRangeException()
+    {
+        var ex = Should.Throw<ArgumentOutOfRangeException>(() => FieldValidator.Validate(60, Units.Minute));
+        ex.Message.ShouldContain("Value 60");
+        ex.Message.ShouldContain("must be between 0 and 59");
+
+        Should.Throw<ArgumentOutOfRangeException>(() => FieldValidator.Validate(24, Units.Hour));
+        Should.Throw<ArgumentOutOfRangeException>(() => FieldValidator.Validate(32, Units.Day));
+        Should.Throw<ArgumentOutOfRangeException>(() => FieldValidator.Validate(13, Units.Month));
+        Should.Throw<ArgumentOutOfRangeException>(() => FieldValidator.Validate(7, Units.DayOfWeek));
+    }
+
+    #endregion
+
+    #region ValidateDayOfMonth
+
+    [Fact]
+    public void ValidateDayOfMonth_NonNumericDay_DoesNotThrow()
+    {
+        Should.NotThrow(() => FieldValidator.ValidateDayOfMonth("*", "*"));
+        Should.NotThrow(() => FieldValidator.ValidateDayOfMonth("L", "1"));
+    }
+
+    [Fact]
+    public void ValidateDayOfMonth_DayLessThanOne_ThrowsArgumentOutOfRangeException()
+    {
+        var ex = Should.Throw<ArgumentOutOfRangeException>(() => FieldValidator.ValidateDayOfMonth("0", "*"));
+        ex.ParamName.ShouldBe("Day");
+        ex.Message.ShouldContain("Day of month 0 must be greater than or equal to 1");
+
+        Should.Throw<ArgumentOutOfRangeException>(() => FieldValidator.ValidateDayOfMonth("-1", "1"));
+    }
+
+    [Fact]
+    public void ValidateDayOfMonth_ValidDayForMonth_DoesNotThrow()
+    {
+        Should.NotThrow(() => FieldValidator.ValidateDayOfMonth("15", "*"));
+        Should.NotThrow(() => FieldValidator.ValidateDayOfMonth("31", "1"));
+        Should.NotThrow(() => FieldValidator.ValidateDayOfMonth("28", "2"));
+        Should.NotThrow(() => FieldValidator.ValidateDayOfMonth("29", "2"));
+        Should.NotThrow(() => FieldValidator.ValidateDayOfMonth("30", "4"));
+    }
+
+    [Fact]
+    public void ValidateDayOfMonth_Day31ForFebruary_ThrowsArgumentOutOfRangeException()
+    {
+        var ex = Should.Throw<ArgumentOutOfRangeException>(() => FieldValidator.ValidateDayOfMonth("31", "2"));
+        ex.ParamName.ShouldBe("Day");
+        ex.Message.ShouldContain("Day of month 31 is invalid for months");
+        ex.Message.ShouldContain("2");
+    }
+
+    [Fact]
+    public void ValidateDayOfMonth_Day30ForFebruary_ThrowsArgumentOutOfRangeException()
+    {
+        var ex = Should.Throw<ArgumentOutOfRangeException>(() => FieldValidator.ValidateDayOfMonth("30", "2"));
+        ex.ParamName.ShouldBe("Day");
+        ex.Message.ShouldContain("Day of month 30 is invalid for months");
+    }
+
+    [Fact]
+    public void ValidateDayOfMonth_Day31ForApril_ThrowsArgumentOutOfRangeException()
+    {
+        var ex = Should.Throw<ArgumentOutOfRangeException>(() => FieldValidator.ValidateDayOfMonth("31", "4"));
+        ex.ParamName.ShouldBe("Day");
+        ex.Message.ShouldContain("31");
+        ex.Message.ShouldContain("4");
+    }
+
+    [Fact]
+    public void ValidateDayOfMonth_MonthExpression_AllMonths_AcceptsDayValidInAtLeastOneMonth()
+    {
+        Should.NotThrow(() => FieldValidator.ValidateDayOfMonth("15", "*"));
+        Should.NotThrow(() => FieldValidator.ValidateDayOfMonth("28", "*"));
+    }
+
+    [Fact]
+    public void ValidateDayOfMonth_MonthExpression_List_ValidatesAgainstEachMonth()
+    {
+        Should.NotThrow(() => FieldValidator.ValidateDayOfMonth("28", "1,2,3"));
+        Should.Throw<ArgumentOutOfRangeException>(() => FieldValidator.ValidateDayOfMonth("31", "2,4,6"));
+    }
+
+    [Fact]
+    public void ValidateDayOfMonth_MonthExpression_Range_ExpandsCorrectly()
+    {
+        Should.NotThrow(() => FieldValidator.ValidateDayOfMonth("31", "1,3"));
+    }
+
+    [Fact]
+    public void ValidateDayOfMonth_NullOrWhiteSpaceMonth_ThrowsArgumentException()
+    {
+        Should.Throw<ArgumentException>(() => FieldValidator.ValidateDayOfMonth("15", null!));
+        Should.Throw<ArgumentException>(() => FieldValidator.ValidateDayOfMonth("15", ""));
+        Should.Throw<ArgumentException>(() => FieldValidator.ValidateDayOfMonth("15", "   "));
+    }
+
+    [Fact]
+    public void ValidateDayOfMonth_InvalidMonthSegment_Throws()
+    {
+        Should.Throw<ArgumentException>(() => FieldValidator.ValidateDayOfMonth("15", "1/2/3"));
+        Should.Throw<ArgumentOutOfRangeException>(() => FieldValidator.ValidateDayOfMonth("15", "1/0"));
+        Should.Throw<ArgumentOutOfRangeException>(() => FieldValidator.ValidateDayOfMonth("15", "13"));
+        Should.Throw<ArgumentOutOfRangeException>(() => FieldValidator.ValidateDayOfMonth("15", "0"));
+    }
+
+    [Fact]
+    public void ValidateDayOfMonth_InvalidMonthRange_Throws()
+    {
+        Should.Throw<ArgumentOutOfRangeException>(() => FieldValidator.ValidateDayOfMonth("15", "5-3"));
+    }
+
+    #endregion
+}

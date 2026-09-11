@@ -1,12 +1,16 @@
-namespace Cron.Extensions.Expressions;
+﻿namespace Cron.Extensions.Expressions;
 
+/// <summary>
+/// Provides extension methods for setting list values in cron expressions.
+/// </summary>
 public static class ListExtensions
 {
     /// <summary>
     /// Sets the minute component of the cron expression to a list of minutes.
     /// </summary>
-    /// <param name="expression"></param>
-    /// <param name="minutes"></param>
+    /// <param name="expression">The cron expression being extended.</param>
+    /// <param name="minutes">The minute values to include in the cron schedule.</param>
+    /// <returns>The same <see cref="CronExpression"/> instance with the minute component set to the provided list.</returns>
     /// <remarks>Valid values are 0 to 59.</remarks>
     public static CronExpression OnMinutes(this CronExpression expression, params int[] minutes)
     {
@@ -17,8 +21,9 @@ public static class ListExtensions
     /// <summary>
     /// Sets the hour component of the cron expression to a list of hours.
     /// </summary>
-    /// <param name="expression"></param>
-    /// <param name="hours"></param>
+    /// <param name="expression">The cron expression being extended.</param>
+    /// <param name="hours">The hour values to include in the cron schedule.</param>
+    /// <returns>The same <see cref="CronExpression"/> instance with the hour component set to the provided list.</returns>
     /// <remarks>Valid values are 0 to 23.</remarks>
     public static CronExpression OnHours(this CronExpression expression, params int[] hours)
     {
@@ -29,8 +34,9 @@ public static class ListExtensions
     /// <summary>
     /// Sets the day component of the cron expression to a list of days.
     /// </summary>
-    /// <param name="expression"></param>
-    /// <param name="days"></param>
+    /// <param name="expression">The cron expression being extended.</param>
+    /// <param name="days">The day-of-month values to include in the cron schedule.</param>
+    /// <returns>The same <see cref="CronExpression"/> instance with the day component set to the provided list.</returns>
     /// <remarks>Valid values are 1 to 31</remarks>
     public static CronExpression OnDays(this CronExpression expression, params int[] days)
     {
@@ -41,8 +47,9 @@ public static class ListExtensions
     /// <summary>
     /// Sets the month component of the cron expression to a list of months.
     /// </summary>
-    /// <param name="expression"></param>
-    /// <param name="months"></param>
+    /// <param name="expression">The cron expression being extended.</param>
+    /// <param name="months">The month values to include in the cron schedule.</param>
+    /// <returns>The same <see cref="CronExpression"/> instance with the month component set to the provided list.</returns>
     /// <remarks>Valid values are 1 to 12.</remarks>
     public static CronExpression OnMonths(this CronExpression expression, params int[] months)
     {
@@ -53,8 +60,9 @@ public static class ListExtensions
     /// <summary>
     /// Sets the day of the week component of the cron expression to a list of days of the week.
     /// </summary>
-    /// <param name="expression"></param>
-    /// <param name="daysOfWeek"></param>
+    /// <param name="expression">The cron expression being extended.</param>
+    /// <param name="daysOfWeek">The day-of-week values to include in the cron schedule.</param>
+    /// <returns>The same <see cref="CronExpression"/> instance with the day-of-week component set to the provided list.</returns>
     /// <remarks>Valid values are 0 to 6; Sunday is 0 and Saturday is 6.</remarks>
     public static CronExpression OnDaysOfWeek(this CronExpression expression, params int[] daysOfWeek)
     {

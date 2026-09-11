@@ -1,9 +1,66 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="Current" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <ItemGroup>
-    <PackageReference Include="Nerdbank.GitVersioning" Condition="!Exists('packages.config')">
+<Project>
+
+  <PropertyGroup Label="Common">
+    <TargetFrameworks>netstandard2.0;netstandard2.1;net6.0;net7.0;net8.0;net9.0;net10.0</TargetFrameworks>
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <AnalysisLevel>latest</AnalysisLevel>
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+    <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <CheckEolTargetFramework>false</CheckEolTargetFramework>
+    <PackageIcon>cron-extensions-expressions.png</PackageIcon>
+  </PropertyGroup>
+
+  <PropertyGroup Label="StrongNaming">
+    <SignAssembly>true</SignAssembly>
+    <AssemblyOriginatorKeyFile>$(MSBuildThisFileDirectory)Cron.Extensions.Expressions.snk</AssemblyOriginatorKeyFile>
+    <CronExtensionsExpressionsPublicKey>0024000004800000940000000602000000240000525341310004000001000100b91c2c249e741f4f3ba6773c6d40a91778900fd630c49530f62bbefbc06d8bc46a132a3a701431c1469dc1ae17c6ea41ca233d4949b1806b5fc75e0a688b3ce31a73c28707c47bec19aba6c306a169e1e6ddef6fa80abb69f2496f1df7b2abffec3637ee74686f77e56ad53006529e125c568d3dbf0b8af3f99988c2486d20b3</CronExtensionsExpressionsPublicKey>
+  </PropertyGroup>
+
+  <PropertyGroup Label="Repository">
+    <Authors>Scott Offen</Authors>
+    <Copyright>© $([System.DateTime]::UtcNow.Year) Scott Offen</Copyright>
+    <RepositoryUrl>https://github.com/scottoffen/cron-extensions-expressions</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageProjectUrl>https://scottoffen.github.io/cron-extensions-expressions/</PackageProjectUrl>
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+    <EmbedUntrackedSources>true</EmbedUntrackedSources>
+    <Deterministic>true</Deterministic>
+    <ContinuousIntegrationBuild Condition="'$(GITHUB_ACTIONS)' == 'true'">true</ContinuousIntegrationBuild>
+  </PropertyGroup>
+
+  <PropertyGroup Label="Packaging">
+    <PackageLicenseExpression>MIT OR Apache-2.0</PackageLicenseExpression>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageTags>Kubernetes;k8s;cron;crontab;expression;expressions;cronexpression;cronexpressions</PackageTags>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <EnablePackageValidation>true</EnablePackageValidation>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+  </PropertyGroup>
+
+  <PropertyGroup Label="GitVersioning">
+    <GitVersionBaseDirectory>$(MSBuildThisFileDirectory)</GitVersionBaseDirectory>
+  </PropertyGroup>
+
+  <ItemGroup Label="AssemblyAttributes">
+    <AssemblyAttribute Include="System.Runtime.InteropServices.ComVisibleAttribute">
+      <_Parameter1>false</_Parameter1>
+      <_Parameter1_IsLiteral>true</_Parameter1_IsLiteral>
+    </AssemblyAttribute>
+  </ItemGroup>
+
+  <ItemGroup Label="BuildPackages">
+    <PackageReference Include="Nerdbank.GitVersioning" Version="3.10.94" Condition="!Exists('packages.config')">
       <PrivateAssets>all</PrivateAssets>
-      <Version>3.6.143</Version>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
   </ItemGroup>
+
+  <ItemGroup Label="PackageFiles">
+    <None Include="..\..\cron-extensions-expressions.png" Pack="true" PackagePath="\" />
+  </ItemGroup>
+
 </Project>

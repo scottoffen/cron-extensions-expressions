@@ -1,0 +1,14 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 📘 Cron.Extensions.Expressions Documentation
+    url: https://scottoffen.github.io/cron-extensions-expressions
+    about: Start here. Many questions are answered in the official docs.
+  - name: 💬 Community Discussions
+    url: https://github.com/scottoffen/cron-extensions-expressions/discussions
+    about: Propose ideas, ask how-to questions, and get community help.
+  - name: "🙋 StackOverflow #cron.extensions.expressions"
+    url: https://stackoverflow.com/questions/tagged/cron.extensions.expressions?sort=newest
+    about: Ask/answer usage questions with the cron.extensions.expressions tag.
+  - name: 🔒 Report a security vulnerability
+    url: https://github.com/scottoffen/cron-extensions-expressions/security/advisories/new
+    about: Please report vulnerabilities privately rather than as a public issue.

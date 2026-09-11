@@ -1,5 +1,8 @@
-namespace Cron.Extensions.Expressions;
+﻿namespace Cron.Extensions.Expressions;
 
+/// <summary>
+/// Provides extension methods for executing and evaluating cron expressions.
+/// </summary>
 public static class ExecutionExtensions
 {
     private static readonly string _wildcard = "*";
@@ -7,13 +10,21 @@ public static class ExecutionExtensions
     /// <summary>
     /// Get the next execution time of the cron expression from the start date. If no start date is provided, the current date is used.
     /// </summary>
-    /// <param name="expression"></param>
-    /// <param name="start"></param>
-    /// <returns></returns>
+    /// <remarks>
+    /// Time arithmetic uses <see cref="DateTime"/> addition, which does not apply daylight saving time (DST) rules.
+    /// When <paramref name="start"/> has <see cref="DateTime.Kind"/> <see cref="DateTimeKind.Local"/> and the next run
+    /// falls in a skipped hour (e.g. 2:00 AM on spring-forward day), the returned time may be invalid in the local zone.
+    /// When it falls in a repeated hour (e.g. 1:30 AM on fall-back day), the result may be ambiguous.
+    /// For predictable behavior across DST boundaries, use a <paramref name="start"/> with <see cref="DateTimeKind.Utc"/>.
+    /// </remarks>
+    /// <param name="expression">The cron expression to evaluate.</param>
+    /// <param name="start">The date and time to evaluate from. When <c>null</c>, the current local time is used.</param>
+    /// <returns>The next scheduled execution time for the specified cron expression.</returns>
     public static DateTime GetNextExecution(this CronExpression expression, DateTime? start = null)
     {
-        start ??= DateTime.Now;
-        var next = start ?? DateTime.Now;
+        var now = DateTime.Now;
+        var next = start ?? now;
+        start ??= now;
 
         while (true)
         {
@@ -73,9 +84,9 @@ public static class ExecutionExtensions
     /// <summary>
     /// Check if the cron expression will run on the provided date and time.
     /// </summary>
-    /// <param name="expression"></param>
-    /// <param name="date"></param>
-    /// <returns></returns>
+    /// <param name="expression">The cron expression to evaluate.</param>
+    /// <param name="date">The date and time to test against the cron expression.</param>
+    /// <returns><c>true</c> when the cron expression matches the provided date and time; otherwise, <c>false</c>.</returns>
     public static bool WillRunOn(this CronExpression expression, DateTime date)
     {
         return CanExecute(date.Minute, expression.Minute)
@@ -112,7 +123,4 @@ public static class ExecutionExtensions
 
         return value == int.Parse(expression);
     }
-
-
-
 }
