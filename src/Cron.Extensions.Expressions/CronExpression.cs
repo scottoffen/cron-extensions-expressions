@@ -25,7 +25,7 @@ public sealed class CronExpression
     /// <param name="hour">The hour component (0-23, or cron syntax). Defaults to "*".</param>
     /// <param name="day">The day of month component (1-31, or cron syntax). Defaults to "*".</param>
     /// <param name="month">The month component (1-12, or cron syntax). Defaults to "*".</param>
-    /// <param name="dayOfWeek">The day of week component (0-6, or cron syntax). Defaults to "*".</param>
+    /// <param name="dayOfWeek">The day of week component (0-7, where both 0 and 7 represent Sunday, or cron syntax). Defaults to "*".</param>
     public CronExpression(string? minute = null, string? hour = null, string? day = null, string? month = null, string? dayOfWeek = null)
     {
         Minute = minute ?? "*";
@@ -98,6 +98,15 @@ public sealed class CronExpression
     /// <summary>
     /// Gets or sets the day of week component of the cron expression.
     /// </summary>
+    /// <remarks>
+    /// Per the cron specification, <c>7</c> is accepted as an alias for Sunday and is stored
+    /// and reflected exactly as assigned - no normalization occurs. <c>7</c> remains a distinct
+    /// value through validation, storage, and formatting, which is what allows a range like
+    /// <c>"5-7"</c> to mean Friday through Sunday rather than being rejected. Matching (see
+    /// <see cref="ExecutionExtensions"/>) is where <c>0</c> and <c>7</c> are treated as
+    /// equivalent: an actual Sunday satisfies either representation, alone or within a list or
+    /// range.
+    /// </remarks>
     /// <exception cref="FormatException">Thrown when the value is not a valid cron expression.</exception>
     /// <exception cref="ArgumentOutOfRangeException">Thrown when the values are out of range for a valid day of week expression.</exception>
     public string DayOfWeek

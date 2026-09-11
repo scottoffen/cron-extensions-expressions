@@ -30,7 +30,7 @@ var text = expr.ToCronExpression(); // "0,30 9,17 1,15 1,7 1,3,5"
 | `OnHours(params int[] hours)`           | Hour           | `6, 12, 18`     | `6,12,18`            | 0–23                  |
 | `OnDays(params int[] days)`             | Day of month   | `1, 15, 31`     | `1,15,31`            | 1–31                  |
 | `OnMonths(params int[] months)`         | Month          | `1, 6, 12`      | `1,6,12`             | 1–12                  |
-| `OnDaysOfWeek(params int[] daysOfWeek)` | Day of week    | `1, 3, 5`       | `1,3,5`              | 0–6 (Sunday–Saturday) |
+| `OnDaysOfWeek(params int[] daysOfWeek)` | Day of week    | `1, 3, 5`       | `1,3,5`              | 0–7 (Sunday–Saturday) |
 
 Each call overwrites the corresponding field of the current `CronExpression`. The provided values are automatically sorted and deduplicated.
 
@@ -81,6 +81,9 @@ new CronExpression()
 > Example: `OnHours(12, 6, 6)` results in `Hour = "6,12"`.
 
 > A single value is written without separators, so `OnDays(15)` sets `Day = "15"`. Because that is a single numeric day, it re-enables the day/month calendar check performed by `ToCronExpression()`.
+
+> `OnDaysOfWeek` treats `0` and `7` as distinct values, same as `DayOfWeek` itself - both represent Sunday, but neither is rewritten to the other, so `OnDaysOfWeek(0, 7)` keeps both and sorts to `"0,7"` rather than collapsing to a single `0`. See [`CronExpression`](./cron-expressions.md) for how `0`/`7` equivalence is applied when matching.
+
 
 ## Design notes
 

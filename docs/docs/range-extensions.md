@@ -30,7 +30,7 @@ var text = expr.ToCronExpression(); // "0-30 8-17 1-15 1-6 1-5"
 | `RangeOfHours(int start, int end)`   | Hour           | `8, 17`       | `8-17`               | 0–23                  |
 | `RangeOfDays(int start, int end)`    | Day of month   | `1, 15`       | `1-15`               | 1–31                  |
 | `RangeOfMonths(int start, int end)`  | Month          | `1, 6`        | `1-6`                | 1–12                  |
-| `RangeOfWeek(int start, int end)`    | Day of week    | `1, 5`        | `1-5`                | 0–6 (Sunday–Saturday) |
+| `RangeOfWeek(int start, int end)`    | Day of week    | `1, 5`        | `1-5`                | 0–7 (Sunday–Saturday) |
 
 Each method overwrites the target field and returns the same `CronExpression` instance, allowing fluent chaining.
 
@@ -78,6 +78,8 @@ new CronExpression()
 * Ranges are inclusive of both bounds.
 
 > Setting a **range** in the day field disables the day/month calendar check. `ToCronExpression()` only verifies that a day can occur in the selected months when `Day` is a single numeric value, so `RangeOfDays(29, 31)` combined with February is not reported as an error. See [`CronExpression`](./cron-expressions.md) for the full rule.
+
+> `RangeOfWeek` supports `7` as the end of a range to reach Sunday: `RangeOfWeek(5, 7)` produces `"5-7"` and correctly means Friday through Sunday. See [`CronExpression`](./cron-expressions.md) for how the `0`/`7` equivalence for Sunday is applied.
 
 ## Design notes
 

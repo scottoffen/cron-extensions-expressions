@@ -1,6 +1,4 @@
-﻿using Cron.Extensions.Expressions;
-
-namespace Cron.Extensions.Expressions.Tests;
+﻿namespace Cron.Extensions.Expressions.Tests;
 
 public class CronExpressionTests
 {
@@ -404,7 +402,8 @@ public class CronExpressionTests
             () => Should.Throw<FormatException>(() => expression.Month = "1-2a"),
             () => Should.Throw<FormatException>(() => expression.Month = "a1,2"),
             () => Should.Throw<FormatException>(() => expression.Month = "1-2a"),
-            () => Should.Throw<FormatException>(() => expression.Month = "1-2-3")
+            () => Should.Throw<FormatException>(() => expression.Month = "1-2-3"),
+            () => Should.Throw<FormatException>(() => expression.Month = "1/2/3")
         );
     }
 
@@ -464,6 +463,59 @@ public class CronExpressionTests
             () => Should.Throw<FormatException>(() => expression.DayOfWeek = "1-2a"),
             () => Should.Throw<FormatException>(() => expression.DayOfWeek = "1-2-3")
         );
+    }
+
+    [Fact]
+    public void DayOfWeekPropertyTest_SevenIsAcceptedAsAliasForSunday()
+    {
+        // Per the cron specification, day-of-week accepts 0-7, where both 0 and 7 represent
+        // Sunday. Unlike an earlier version of this behavior, "7" is NOT normalized to "0" -
+        // it is stored and reflected exactly as assigned. This matters because normalizing
+        // early would break a range like "5-7" (Friday through Sunday), turning it into the
+        // reversed range "5-0". Matching (in ExecutionExtensions) is where 0 and 7 are treated
+        // as equivalent, not storage or validation.
+        var expression = new CronExpression();
+
+        expression.DayOfWeek = "7";
+        expression.DayOfWeek.ShouldBe("7");
+
+        expression.DayOfWeek = "1,7";
+        expression.DayOfWeek.ShouldBe("1,7");
+
+        expression.DayOfWeek = "5,7,3";
+        expression.DayOfWeek.ShouldBe("5,7,3");
+
+        new CronExpression(dayOfWeek: "7").DayOfWeek.ShouldBe("7");
+        new CronExpression(dayOfWeek: "7").ToCronExpression().ShouldBe("* * * * 7");
+
+        // A range ending in 7 is a legitimate Friday-through-Sunday (or similar) span, not a
+        // reversed range - this must NOT throw.
+        expression.DayOfWeek = "5-7";
+        expression.DayOfWeek.ShouldBe("5-7");
+
+        expression.DayOfWeek = "0-7";
+        expression.DayOfWeek.ShouldBe("0-7");
+
+        // A two-digit token such as "17" is still out of range on its own terms.
+        Should.Throw<ArgumentOutOfRangeException>(() => expression.DayOfWeek = "17");
+
+        // 8 and above remain invalid; only 0-7 is a legal day-of-week value.
+        Should.Throw<ArgumentOutOfRangeException>(() => expression.DayOfWeek = "8");
+
+        // Step syntax remains unsupported for day-of-week regardless of whether "7" appears.
+        Should.Throw<NotSupportedException>(() => expression.DayOfWeek = "7/2");
+    }
+
+    [Fact]
+    public void DayOfWeekPropertyTest_RangeEndingInSevenIsARealRange()
+    {
+        // "5-7" must actually validate as start(5) < end(7), not be silently rewritten into
+        // something else first.
+        Should.NotThrow(() => new CronExpression(dayOfWeek: "5-7"));
+        Should.NotThrow(() => new CronExpression(dayOfWeek: "6-7"));
+
+        // "7-7" is a zero-width range (start == end) and is rejected the same way "5-5" is.
+        Should.Throw<ArgumentOutOfRangeException>(() => new CronExpression(dayOfWeek: "7-7"));
     }
 
     [Fact]

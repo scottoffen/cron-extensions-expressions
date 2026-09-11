@@ -21,7 +21,7 @@ internal static class FieldValidator
         { Units.Hour, new MinMax(0, 23) },
         { Units.Day, new MinMax(1, 31) },
         { Units.Month, new MinMax(1, 12) },
-        { Units.DayOfWeek, new MinMax(0, 6) }
+        { Units.DayOfWeek, new MinMax(0, 7) } // Per the cron specification, both 0 and 7 represent Sunday.
     };
 
     private static readonly Dictionary<int, int> _daysInMonths = new Dictionary<int, int>
@@ -91,7 +91,7 @@ internal static class FieldValidator
         if (unit == Units.DayOfWeek)
             throw new NotSupportedException("Interval values are not supported for day of week.");
 
-        var values = value.Split('/');
+        var values = value.Split(_stepSeparator, 2);
         var start = (values[0] == _wildcard) ? -1 : int.Parse(values[0]);
         var interval = int.Parse(values[1]);
 
@@ -171,9 +171,10 @@ internal static class FieldValidator
         }
 
         var rangePart = stepParts[0].Trim();
+        var hasStep = stepParts.Length == 2;
         var step = 1;
 
-        if (stepParts.Length == 2 &&
+        if (hasStep &&
             (!int.TryParse(stepParts[1].Trim(), out step) || step < 1))
         {
             throw new ArgumentOutOfRangeException(nameof(segment), $"Invalid step value in month expression segment '{segment}'.");
@@ -181,6 +182,15 @@ internal static class FieldValidator
 
         int start, end;
         ParseRange(rangePart, out start, out end);
+
+        // An "N/M" segment (a bare starting value with a step, e.g. "2/5") expands from N
+        // through the field's maximum every M steps - it is not just the single value N.
+        // A wildcard ("*/M") and an explicit range ("A-B/M") already carry the correct
+        // end value from ParseRange and are left untouched.
+        if (hasStep && rangePart != _wildcard && !rangePart.Contains('-'))
+        {
+            end = GetMaxValue(Units.Month);
+        }
 
         for (var month = start; month <= end; month += step)
         {

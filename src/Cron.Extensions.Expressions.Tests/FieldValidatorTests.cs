@@ -1,6 +1,4 @@
-﻿using Cron.Extensions.Expressions;
-
-namespace Cron.Extensions.Expressions.Tests;
+﻿namespace Cron.Extensions.Expressions.Tests;
 
 public class FieldValidatorTests
 {
@@ -23,7 +21,7 @@ public class FieldValidatorTests
         FieldValidator.GetMaxValue(Units.Hour).ShouldBe(23);
         FieldValidator.GetMaxValue(Units.Day).ShouldBe(31);
         FieldValidator.GetMaxValue(Units.Month).ShouldBe(12);
-        FieldValidator.GetMaxValue(Units.DayOfWeek).ShouldBe(6);
+        FieldValidator.GetMaxValue(Units.DayOfWeek).ShouldBe(7);
     }
 
     #endregion
@@ -55,6 +53,14 @@ public class FieldValidatorTests
     }
 
     [Fact]
+    public void Validate_String_SingleValue_DayOfWeekSeven_IsValid()
+    {
+        // Per the cron specification, 7 is a legal DayOfWeek value in its own right (an alias
+        // for Sunday) - it is not out of range.
+        Should.NotThrow(() => FieldValidator.Validate("7", Units.DayOfWeek));
+    }
+
+    [Fact]
     public void Validate_String_SingleValue_OutOfRange_ThrowsArgumentOutOfRangeException()
     {
         Should.Throw<ArgumentOutOfRangeException>(() => FieldValidator.Validate("60", Units.Minute));
@@ -63,7 +69,7 @@ public class FieldValidatorTests
         Should.Throw<ArgumentOutOfRangeException>(() => FieldValidator.Validate("32", Units.Day));
         Should.Throw<ArgumentOutOfRangeException>(() => FieldValidator.Validate("0", Units.Month));
         Should.Throw<ArgumentOutOfRangeException>(() => FieldValidator.Validate("13", Units.Month));
-        Should.Throw<ArgumentOutOfRangeException>(() => FieldValidator.Validate("7", Units.DayOfWeek));
+        Should.Throw<ArgumentOutOfRangeException>(() => FieldValidator.Validate("8", Units.DayOfWeek));
     }
 
     #endregion
@@ -95,6 +101,17 @@ public class FieldValidatorTests
         Should.NotThrow(() => FieldValidator.Validate("8-17", Units.Hour));
         Should.NotThrow(() => FieldValidator.Validate("1-31", Units.Day));
         Should.NotThrow(() => FieldValidator.Validate("1-5", Units.DayOfWeek));
+    }
+
+    [Fact]
+    public void Validate_String_Range_DayOfWeekEndingInSeven_IsValid()
+    {
+        // "5-7" (Friday through Sunday) and "6-7" (Saturday through Sunday) are legitimate
+        // ranges, not reversed ones - 7 is a real value above 6, not an alias rewritten to 0
+        // before this check runs.
+        Should.NotThrow(() => FieldValidator.Validate("5-7", Units.DayOfWeek));
+        Should.NotThrow(() => FieldValidator.Validate("6-7", Units.DayOfWeek));
+        Should.NotThrow(() => FieldValidator.Validate("0-7", Units.DayOfWeek));
     }
 
     [Fact]
@@ -161,6 +178,17 @@ public class FieldValidatorTests
         Should.Throw<ArgumentOutOfRangeException>(() => FieldValidator.Validate("60/5", Units.Minute));
     }
 
+    [Fact]
+    public void Validate_String_Step_TooManySegments_ThrowsFormatException()
+    {
+        // "1/2/3" was previously accepted silently, with the "/3" dropped - only the first
+        // two split parts (start "1" and interval "2") were ever read. Splitting to a
+        // maximum of 2 parts folds the extra "/3" into the interval side, so int.Parse fails
+        // on "2/3", consistent with how ValidateRange already catches "1-2-3" the same way.
+        Should.Throw<FormatException>(() => FieldValidator.Validate("1/2/3", Units.Minute));
+        Should.Throw<FormatException>(() => FieldValidator.Validate("*/2/3", Units.Hour));
+    }
+
     #endregion
 
     #region Validate(int, Units)
@@ -177,7 +205,7 @@ public class FieldValidatorTests
         Should.NotThrow(() => FieldValidator.Validate(1, Units.Month));
         Should.NotThrow(() => FieldValidator.Validate(12, Units.Month));
         Should.NotThrow(() => FieldValidator.Validate(0, Units.DayOfWeek));
-        Should.NotThrow(() => FieldValidator.Validate(6, Units.DayOfWeek));
+        Should.NotThrow(() => FieldValidator.Validate(7, Units.DayOfWeek));
     }
 
     [Fact]
@@ -201,7 +229,7 @@ public class FieldValidatorTests
         Should.Throw<ArgumentOutOfRangeException>(() => FieldValidator.Validate(24, Units.Hour));
         Should.Throw<ArgumentOutOfRangeException>(() => FieldValidator.Validate(32, Units.Day));
         Should.Throw<ArgumentOutOfRangeException>(() => FieldValidator.Validate(13, Units.Month));
-        Should.Throw<ArgumentOutOfRangeException>(() => FieldValidator.Validate(7, Units.DayOfWeek));
+        Should.Throw<ArgumentOutOfRangeException>(() => FieldValidator.Validate(8, Units.DayOfWeek));
     }
 
     #endregion
@@ -302,6 +330,24 @@ public class FieldValidatorTests
     public void ValidateDayOfMonth_InvalidMonthRange_Throws()
     {
         Should.Throw<ArgumentOutOfRangeException>(() => FieldValidator.ValidateDayOfMonth("15", "5-3"));
+    }
+
+    [Fact]
+    public void ValidateDayOfMonth_MonthStepExpression_ExpandsPastFirstValue()
+    {
+        // "2/5" must expand to February, July, and December - not just February.
+        // Day 30 is invalid for February (max 29) but valid for July and December (max 31 each),
+        // so this only passes if July and December are actually included in the expansion.
+        Should.NotThrow(() => FieldValidator.ValidateDayOfMonth("30", "2/5"));
+    }
+
+    [Fact]
+    public void ValidateDayOfMonth_MonthStepExpression_ExpandsToEveryStepNotJustTheStart()
+    {
+        // "4/3" must expand to April, July, and October. Day 31 is invalid for April (max 30)
+        // but valid for July and October (max 31 each), so this only passes if July and
+        // October are actually included in the expansion rather than just April.
+        Should.NotThrow(() => FieldValidator.ValidateDayOfMonth("31", "4/3"));
     }
 
     #endregion

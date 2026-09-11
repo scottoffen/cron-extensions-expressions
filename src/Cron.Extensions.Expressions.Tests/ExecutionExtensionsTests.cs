@@ -1,5 +1,3 @@
-using Cron.Extensions.Expressions;
-
 namespace Cron.Extensions.Expressions.Tests;
 
 public class ExecutionExtensionsTests
@@ -602,11 +600,15 @@ public class ExecutionExtensionsTests
     [Fact]
     public void GetNextExecution_ShouldHandleDayIncrements()
     {
+        // Day of month is 1-based, so "*/increment" is anchored at day 1: 1, 1+increment, 1+2*increment, ...
         var increment = 5;
         var expression = new CronExpression
         {
             Day = $"*/{increment}"
         };
+
+        var validDays = new List<int>();
+        for (var d = 1; d <= 31; d += increment) validDays.Add(d);
 
         var now = GetNow();
         now = now
@@ -620,18 +622,13 @@ public class ExecutionExtensionsTests
             now = now.AddDays(-now.Day + i);
             var actual = expression.GetNextExecution(now);
 
-            var expected = now;
-            if (now.Day % increment == 0)
-            {
-                expected = expected.AddMinutes(1);
-            }
-            else
-            {
-                var nextDay = (now.Day / increment + 1) * increment;
-                expected = (nextDay >= 31)
-                    ? expected.AddDays(-now.Day + increment).AddMonths(1)
-                    : expected.AddDays(-now.Day + nextDay);
-            }
+            var nextDay = validDays.FirstOrDefault(d => d >= now.Day);
+            if (nextDay == 0) nextDay = validDays.First();
+
+            var expected = now.AddDays(-now.Day + nextDay);
+            if (nextDay < now.Day) expected = expected.AddMonths(1);
+
+            if (validDays.Contains(now.Day)) expected = expected.AddMinutes(1);
 
             actual.ShouldBe(expected);
         }
@@ -640,11 +637,15 @@ public class ExecutionExtensionsTests
     [Fact]
     public void GetNextExecution_ShouldHandleMonthIncrements()
     {
+        // Month is 1-based, so "*/increment" is anchored at month 1: 1, 1+increment, 1+2*increment, ...
         var increment = 2;
         var expression = new CronExpression
         {
             Month = $"*/{increment}"
         };
+
+        var validMonths = new List<int>();
+        for (var m = 1; m <= 12; m += increment) validMonths.Add(m);
 
         var now = GetNow().AddYears(1);
         now = now
@@ -657,18 +658,13 @@ public class ExecutionExtensionsTests
             now = now.AddMonths(-now.Month + i);
             var actual = expression.GetNextExecution(now);
 
-            var expected = now;
-            if (now.Month % increment == 0)
-            {
-                expected = expected.AddMinutes(1);
-            }
-            else
-            {
-                var nextMonth = (now.Month / increment + 1) * increment;
-                expected = (nextMonth > 12)
-                    ? expected.AddMonths(-now.Month + increment).AddYears(1)
-                    : expected.AddMonths(-now.Month + nextMonth);
-            }
+            var nextMonth = validMonths.FirstOrDefault(m => m >= now.Month);
+            if (nextMonth == 0) nextMonth = validMonths.First();
+
+            var expected = now.AddMonths(-now.Month + nextMonth);
+            if (nextMonth < now.Month) expected = expected.AddYears(1);
+
+            if (validMonths.Contains(now.Month)) expected = expected.AddMinutes(1);
 
             actual.ShouldBe(expected);
         }
@@ -677,16 +673,200 @@ public class ExecutionExtensionsTests
     [Fact]
     public void WillRunOn_ShouldReturnTrue()
     {
+        // Day of month is 1-based, so "*/2" is anchored at day 1: 1, 3, 5, ..., 31.
         var expression = new CronExpression(day: "*/2");
 
         for (var i = 1; i <= 31; i++)
         {
-            var expected = i % 2 == 0;
+            var expected = i % 2 != 0;
 
             var date = new DateTime(2024, 10, i);
             var actual = expression.WillRunOn(date);
             actual.ShouldBe(expected);
         }
+    }
 
+    [Fact]
+    public void WillRunOn_WithMonthStepBelowStart_ShouldNotMatchMonthsBeforeStart()
+    {
+        // "4/3" should only ever match months >= 4 (April, July, October), never January.
+        var expression = new CronExpression(month: "4/3");
+
+        var expectedMonths = new HashSet<int> { 4, 7, 10 };
+
+        for (var month = 1; month <= 12; month++)
+        {
+            var expected = expectedMonths.Contains(month);
+            var date = new DateTime(2024, month, 1);
+            var actual = expression.WillRunOn(date);
+            actual.ShouldBe(expected, $"month: {month}");
+        }
+    }
+
+    [Fact]
+    public void WillRunOn_WithMonthWildcardStep_ShouldMatchKubernetesCompatibleMonths()
+    {
+        // "*/5" should be anchored at month 1 (Jan, Jun, Nov), not month 0 (May, Oct).
+        var expression = new CronExpression(month: "*/5");
+
+        var expectedMonths = new HashSet<int> { 1, 6, 11 };
+
+        for (var month = 1; month <= 12; month++)
+        {
+            var expected = expectedMonths.Contains(month);
+            var date = new DateTime(2024, month, 1);
+            var actual = expression.WillRunOn(date);
+            actual.ShouldBe(expected, $"month: {month}");
+        }
+    }
+
+    [Fact]
+    public void WillRunOn_WithDayOfWeekSeven_MatchesSundayJustLikeZero()
+    {
+        // Per the cron specification, "7" is an alias for Sunday. CronExpression stores "7"
+        // exactly as assigned (it is not normalized to "0"), so this confirms matching itself
+        // treats them as equivalent.
+        var expressionWithSeven = new CronExpression(dayOfWeek: "7");
+        var expressionWithZero = new CronExpression(dayOfWeek: "0");
+
+        for (var day = 1; day <= 31; day++)
+        {
+            var date = new DateTime(2024, 10, day);
+            var expected = date.DayOfWeek == DayOfWeek.Sunday;
+
+            expressionWithSeven.WillRunOn(date).ShouldBe(expected, $"day: {day}");
+            expressionWithZero.WillRunOn(date).ShouldBe(expected, $"day: {day}");
+        }
+    }
+
+    [Fact]
+    public void WillRunOn_WithDayOfWeekRangeEndingInSeven_MatchesThroughSunday()
+    {
+        // "5-7" must mean Friday, Saturday, Sunday - not throw, and not silently drop Sunday.
+        var fridayThroughSunday = new CronExpression(dayOfWeek: "5-7");
+
+        for (var day = 1; day <= 31; day++)
+        {
+            var date = new DateTime(2024, 10, day);
+            var dow = date.DayOfWeek;
+            var expected = dow == DayOfWeek.Friday || dow == DayOfWeek.Saturday || dow == DayOfWeek.Sunday;
+
+            fridayThroughSunday.WillRunOn(date).ShouldBe(expected, $"day: {day}");
+        }
+    }
+
+    [Fact]
+    public void WillRunOn_WithDayOfWeekListIncludingSeven_MatchesSundayAlongsideOtherDays()
+    {
+        // "1,7" must mean Monday and Sunday.
+        var mondayAndSunday = new CronExpression(dayOfWeek: "1,7");
+
+        for (var day = 1; day <= 31; day++)
+        {
+            var date = new DateTime(2024, 10, day);
+            var dow = date.DayOfWeek;
+            var expected = dow == DayOfWeek.Monday || dow == DayOfWeek.Sunday;
+
+            mondayAndSunday.WillRunOn(date).ShouldBe(expected, $"day: {day}");
+        }
+    }
+
+    [Fact]
+    public void WillRunOn_WithDayOfWeekRangeNotIncludingSeven_DoesNotSpuriouslyMatchSunday()
+    {
+        // A range that never touches 7 (e.g. "1-5", Monday-Friday) must not be affected by the
+        // 7-for-Sunday handling - Sunday must still correctly fail to match.
+        var weekdays = new CronExpression(dayOfWeek: "1-5");
+
+        for (var day = 1; day <= 31; day++)
+        {
+            var date = new DateTime(2024, 10, day);
+            var dow = date.DayOfWeek;
+            var expected = dow >= DayOfWeek.Monday && dow <= DayOfWeek.Friday;
+
+            weekdays.WillRunOn(date).ShouldBe(expected, $"day: {day}");
+        }
+    }
+
+    [Fact]
+    public void WillRunOn_WithBothDayAndDayOfWeekRestricted_ShouldMatchEitherField()
+    {
+        // Standard (Vixie/Kubernetes) cron semantics: when both day-of-month and day-of-week
+        // are restricted, a date matches if EITHER matches - e.g. "1,15" and Friday means the
+        // 1st, the 15th, or any Friday, not only a 1st/15th that happens to fall on a Friday.
+        var expression = new CronExpression(day: "1,15", dayOfWeek: "5");
+
+        for (var day = 1; day <= 31; day++)
+        {
+            var date = new DateTime(2024, 10, day);
+            var expected = day == 1 || day == 15 || date.DayOfWeek == DayOfWeek.Friday;
+
+            var actual = expression.WillRunOn(date);
+            actual.ShouldBe(expected, $"day: {day}");
+        }
+    }
+
+    [Fact]
+    public void WillRunOn_WithOnlyDayOfWeekRestricted_ShouldRequireDayOfWeekMatchOnly()
+    {
+        // The OR rule only applies when BOTH fields are restricted. With day-of-month left
+        // as "*", only day-of-week needs to match.
+        var expression = new CronExpression(dayOfWeek: "5");
+
+        for (var day = 1; day <= 31; day++)
+        {
+            var date = new DateTime(2024, 10, day);
+            var expected = date.DayOfWeek == DayOfWeek.Friday;
+
+            var actual = expression.WillRunOn(date);
+            actual.ShouldBe(expected, $"day: {day}");
+        }
+    }
+
+    [Fact]
+    public void GetNextExecution_WithBothDayAndDayOfWeekRestricted_ShouldMatchEitherField()
+    {
+        // Standard (Vixie/Kubernetes) cron semantics: when both day-of-month and day-of-week
+        // are restricted, a match on EITHER field is sufficient, not only when both match
+        // simultaneously.
+        var days = new List<int> { 1, 15 };
+        var daysOfWeek = new List<int> { 5 }; // Friday
+
+        var expression = new CronExpression
+        {
+            Day = string.Join(",", days),
+            DayOfWeek = string.Join(",", daysOfWeek)
+        };
+
+        var now = GetNow();
+        now = now
+            .AddMinutes(-now.Minute)
+            .AddHours(-now.Hour)
+            .AddMonths(-now.Month + 7)
+            .AddYears(1)
+            .AddDays(-now.Day + 1);
+
+        for (var i = 0; i < 40; i++)
+        {
+            var matchesNow = days.Contains(now.Day) || daysOfWeek.Contains((int)now.DayOfWeek);
+            var actual = expression.GetNextExecution(now);
+
+            DateTime expected;
+            if (matchesNow)
+            {
+                expected = now.AddMinutes(1);
+            }
+            else
+            {
+                expected = now.AddDays(1);
+                while (!(days.Contains(expected.Day) || daysOfWeek.Contains((int)expected.DayOfWeek)))
+                {
+                    expected = expected.AddDays(1);
+                }
+            }
+
+            actual.ShouldBe(expected, $"now: {now:yyyy-MM-dd}");
+            now = now.AddDays(1);
+        }
     }
 }

@@ -91,6 +91,8 @@ Assigning out-of-range values results in exceptions from the `CronExpression` pr
 * An `increment` larger than the field's maximum also throws, so `EveryXMinutes(60)` is rejected.
 * `ToCronExpression()` checks that a specified day is valid for the specified month, but only when the day is a single numeric value. A day written as a step, such as the `*/3` produced by `EveryXDays(3)`, skips that check.
 
+> A `*/n` step counts from the field's own minimum, which is `1` for days and months. `EveryXDays(2)` produces `*/2`, which selects the 1st, 3rd, 5th and so on through the 31st, **not** the even-numbered days. Likewise `EveryXMonths(2)` selects January, March, May, and so on. Minutes and hours have a minimum of `0`, so `EveryXMinutes(15)` selects 0, 15, 30, and 45 as you would expect. Use the two-argument overload when you want to pick the starting value yourself, as in `EveryXDays(2, 2)` for the even days.
+
 > These methods do not perform additional parameter checks beyond setting the corresponding cron field. If you pass an invalid `start` or `increment`, the assignment will fail during property validation.
 
 ## Design notes
@@ -98,4 +100,3 @@ Assigning out-of-range values results in exceptions from the `CronExpression` pr
 * Methods return the same `CronExpression` instance for fluent chaining.
 * Only the targeted field is modified. Other fields remain whatever they were previously.
 * Passing `1` to an `EveryX*` method is optimized to call the corresponding `Every*` method.
-
