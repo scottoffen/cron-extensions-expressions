@@ -68,11 +68,11 @@ This library uses the standard 5‑field format that Kubernetes CronJobs expect.
 
 | Field     | Property    | Allowed examples                    | Step syntax | Valid range           |
 | --------- | ----------- | ----------------------------------- | ----------- | --------------------- |
-| Minute    | `Minute`    | `*`, `0`, `*/5`, `0,15,30`, `10-20` | Yes         | 0–59                  |
-| Hour      | `Hour`      | `*`, `0`, `*/4`, `9,17`, `6-18`     | Yes         | 0–23                  |
-| Day (DOM) | `Day`       | `*`, `1`, `1,15`, `1-31`, `*/2`     | Yes         | 1–31                  |
-| Month     | `Month`     | `*`, `1`, `1,6,12`, `1-12`, `*/3`   | Yes         | 1–12                  |
-| DayOfWeek | `DayOfWeek` | `*`, `0`, `1-5`, `0,6`, `7`         | **No**      | 0–7 (Sunday–Saturday) |
+| Minute    | `Minute`    | `*`, `0`, `*/5`, `0,15,30`, `10-20` | Yes         | 0-59                  |
+| Hour      | `Hour`      | `*`, `0`, `*/4`, `9,17`, `6-18`     | Yes         | 0-23                  |
+| Day (DOM) | `Day`       | `*`, `1`, `1,15`, `1-31`, `*/2`     | Yes         | 1-31                  |
+| Month     | `Month`     | `*`, `1`, `1,6,12`, `1-12`, `*/3`   | Yes         | 1-12                  |
+| DayOfWeek | `DayOfWeek` | `*`, `0`, `1-5`, `0,6`, `7`         | **No**      | 0-7 (Sunday-Saturday) |
 
 If a value is outside of these ranges or invalid for its position, the property setter throws a `FormatException`, `ArgumentOutOfRangeException`, or `NotSupportedException`.
 
@@ -126,7 +126,7 @@ Setting any field automatically validates that field's syntax and numeric ranges
 | Scenario                                                        | Exception                                                 | Notes                                                              |
 | ------------------------------------------------------------------ | --------------------------------------------------------- | ------------------------------------------------------------------- |
 | Invalid syntax or non‑numeric token (`a`, `1a`, `1-2-3`, `1/2/3`)   | `FormatException`                                          | Check for names such as `MON`, macros such as `@daily`, a range combined with a step (`1-10/2`), or a step with more than one `/` (`1/2/3`). |
-| Value outside the allowed range (`8` for `DayOfWeek`)               | `ArgumentOutOfRangeException`                              | `DayOfWeek`'s valid range is 0–7 (`7` is legal in its own right - see the note above); `8` and above are genuinely out of range. |
+| Value outside the allowed range (`8` for `DayOfWeek`)               | `ArgumentOutOfRangeException`                              | `DayOfWeek`'s valid range is 0-7 (`7` is legal in its own right - see the note above); `8` and above are genuinely out of range. |
 | Range start not less than end (`6-3`, `5-5`)                       | `ArgumentOutOfRangeException`                              | To express a single value, assign that value directly rather than as a range. |
 | Step interval of `0`, or larger than the field's maximum            | `ArgumentOutOfRangeException`                              | An interval must be at least `1` and no greater than the field's own maximum, e.g. `EveryXMinutes(60)`-style values fail. |
 | Step syntax on `DayOfWeek` (`*/1`, `1/2`)                          | `NotSupportedException`                                    | Use a list (`1,3,5`) or a range (`1-5`) instead.                    |

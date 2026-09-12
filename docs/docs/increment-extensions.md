@@ -28,17 +28,17 @@ Every method sets a single field to a step interval, either a fixed increment or
 | Method                                    | Effect on `CronExpression`                                                                  | Valid values                 |
 | ----------------------------------------- | ------------------------------------------------------------------------------------------- | ---------------------------- |
 | `EveryMinute()`                           | `Minute = "*"`                                                                              | —                            |
-| `EveryXMinutes(int increment)`            | `Minute = "*/{increment}"` (uses `EveryMinute()` when `increment == 1`)                     | increment: 1–59              |
-| `EveryXMinutes(int start, int increment)` | `Minute = "{start}/{increment}"` (uses `EveryMinute()` when `start == 1 && increment == 1`) | start: 0–59, increment: 1–59 |
+| `EveryXMinutes(int increment)`            | `Minute = "*/{increment}"` (uses `EveryMinute()` when `increment == 1`)                     | increment: 1-59              |
+| `EveryXMinutes(int start, int increment)` | `Minute = "{start}/{increment}"` (uses `EveryMinute()` when `start == 1 && increment == 1`) | start: 0-59, increment: 1-59 |
 | `EveryHour()`                             | `Hour = "*"`                                                                                | —                            |
-| `EveryXHours(int increment)`              | `Hour = "*/{increment}"` (uses `EveryHour()` when `increment == 1`)                         | increment: 1–23              |
-| `EveryXHours(int start, int increment)`   | `Hour = "{start}/{increment}"` (uses `EveryHour()` when `start == 1 && increment == 1`)     | start: 0–23, increment: 1–23 |
+| `EveryXHours(int increment)`              | `Hour = "*/{increment}"` (uses `EveryHour()` when `increment == 1`)                         | increment: 1-23              |
+| `EveryXHours(int start, int increment)`   | `Hour = "{start}/{increment}"` (uses `EveryHour()` when `start == 1 && increment == 1`)     | start: 0-23, increment: 1-23 |
 | `EveryDay()`                              | `Day = "*"`                                                                                 | —                            |
-| `EveryXDays(int increment)`               | `Day = "*/{increment}"` (uses `EveryDay()` when `increment == 1`)                           | increment: 1–31              |
-| `EveryXDays(int start, int increment)`    | `Day = "{start}/{increment}"` (uses `EveryDay()` when `start == 1 && increment == 1`)       | start: 1–31, increment: 1–31 |
+| `EveryXDays(int increment)`               | `Day = "*/{increment}"` (uses `EveryDay()` when `increment == 1`)                           | increment: 1-31              |
+| `EveryXDays(int start, int increment)`    | `Day = "{start}/{increment}"` (uses `EveryDay()` when `start == 1 && increment == 1`)       | start: 1-31, increment: 1-31 |
 | `EveryMonth()`                            | `Month = "*"`                                                                               | —                            |
-| `EveryXMonths(int increment)`             | `Month = "*/{increment}"` (uses `EveryMonth()` when `increment == 1`)                       | increment: 1–12              |
-| `EveryXMonths(int start, int increment)`  | `Month = "{start}/{increment}"` (uses `EveryMonth()` when `start == 1 && increment == 1`)   | start: 1–12, increment: 1–12 |
+| `EveryXMonths(int increment)`             | `Month = "*/{increment}"` (uses `EveryMonth()` when `increment == 1`)                       | increment: 1-12              |
+| `EveryXMonths(int start, int increment)`  | `Month = "{start}/{increment}"` (uses `EveryMonth()` when `start == 1 && increment == 1`)   | start: 1-12, increment: 1-12 |
 
 :::tip[No day-of-week increment helpers]
 
@@ -97,17 +97,13 @@ Assigning out-of-range values results in exceptions from the `CronExpression` pr
 
 | Scenario                                                                | Exception                     | Notes                                                                                                                                              |
 | ------------------------------------------------------------------------- | ------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `start` or `increment` outside the field's range (e.g. hour `24`, day `32`) | `ArgumentOutOfRangeException` | Same ranges as [`CronExpression`](./cron-expressions.md): minute/hour are 0–59/0–23; day/month are 1–31/1–12.                                     |
+| `start` or `increment` outside the field's range (e.g. hour `24`, day `32`) | `ArgumentOutOfRangeException` | Same ranges as [`CronExpression`](./cron-expressions.md): minute/hour are 0-59/0-23; day/month are 1-31/1-12.                                     |
 | `increment` of `0`                                                         | `ArgumentOutOfRangeException` | Reported as an interval error (`Interval value 0 for <field> must be greater than 0`) rather than a field-range error.                          |
 | `increment` larger than the field's maximum                               | `ArgumentOutOfRangeException` | `EveryXMinutes(60)` is rejected this way.                                                                                                           |
 
 These methods perform no additional parameter checks beyond setting the corresponding cron field - an invalid `start` or `increment` fails during property validation, not before.
 
-:::note[A step disables the day/month calendar check]
-
-`ToCronExpression()` checks that a specified day is valid for the specified month, but only when `Day` is a single numeric value. A day written as a step, such as the `*/3` produced by `EveryXDays(3)`, skips that check entirely.
-
-:::
+Because these methods always write a step into the day field, they also suppress the day/month calendar check that `ToCronExpression()` would otherwise perform - see [Invalid Day of Month](./cron-expressions.md) for the rule.
 
 :::note[A `*/n` step counts from the field's minimum]
 
