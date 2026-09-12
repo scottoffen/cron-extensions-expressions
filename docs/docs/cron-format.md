@@ -7,7 +7,7 @@ This page describes the syntax this library accepts, along with the field semant
 
 ## Fields
 
-Expressions always have exactly five fields, in the order Kubernetes CronJobs expect. There is no seconds field and no year field.
+Expressions always have exactly five fields, in the standard cron order (the same order Kubernetes CronJobs expect). There is no seconds field and no year field.
 
 | Field     | Property    | Valid range           | Step syntax |
 | --------- | ----------- | --------------------- | ----------- |

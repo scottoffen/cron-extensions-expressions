@@ -7,12 +7,13 @@ Easily create and parse cron expressions using a fluent syntax.
 
 :::important
 
-This library currently only supports Kubernetes cron expressions.
+This library implements standard cron expressions - the five-field syntax, including names, macros, ranges, and lists, that predates Kubernetes by decades. It is fully compatible with Kubernetes CronJob schedules, but does not implement Quartz's extensions (a seconds or year field, or the `?`, `L`, `W`, `#` tokens).
 
 :::
 
 ## Package Details
 
+* **Kubernetes CronJob compatible.** Every expression this library builds or parses is a valid Kubernetes CronJob `schedule`.
 * **Broad framework support.** Targets .NET Standard 2.0 and 2.1 alongside .NET 6 through .NET 10.
 * **AOT and trim friendly.** The assembly is annotated as AOT-compatible, so it can be used in Native AOT and trimmed deployments without tripping the trimming analyzers.
 * **Strong-named.** The assembly is signed, which means it can be referenced from other strong-named assemblies.

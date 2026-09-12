@@ -3,7 +3,7 @@
 namespace Cron.Extensions.Expressions;
 
 /// <summary>
-/// Represents a Kubernetes-supported cron expression.
+/// Represents a standard five-field cron expression, fully compatible with Kubernetes CronJob schedules.
 /// </summary>
 public sealed class CronExpression
 {

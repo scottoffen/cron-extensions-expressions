@@ -5,7 +5,7 @@
 [![MIT](https://img.shields.io/github/license/scottoffen/cron-extensions-expressions?color=blue)](./LICENSE-MIT)
 [![Contributor Covenant](https://img.shields.io/badge/Contributor%20Covenant-2.1-blue.svg)](.github/code_of_conduct.md)
 
-Utilities for building and parsing Kubernetes-compatible five-field cron expressions. Exposes a mutable CronExpression type and fluent extension methods for ranges, increments, lists, and execution evaluation.
+Utilities for building and parsing standard five-field cron expressions, fully compatible with Kubernetes CronJob schedules. Exposes a mutable CronExpression type and fluent extension methods for ranges, increments, lists, and execution evaluation.
 
 ## Installation
 
