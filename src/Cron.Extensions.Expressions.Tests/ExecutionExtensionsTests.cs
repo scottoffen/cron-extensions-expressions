@@ -757,6 +757,32 @@ public class ExecutionExtensionsTests
     }
 
     [Fact]
+    public void WillRunOn_BuiltFromNames_MatchesTheSameDatesAsTheNumericEquivalent()
+    {
+        // Names are translated to numeric form at assignment, so an expression built from
+        // names must match exactly the same dates as the equivalent numeric expression - this
+        // is the end-to-end confirmation that ExecutionExtensions never needs to know names
+        // exist.
+        var expression = new CronExpression(month: "JAN-JUN", dayOfWeek: "MON-FRI");
+
+        var expectedMonths = new HashSet<int> { 1, 2, 3, 4, 5, 6 };
+        var expectedDaysOfWeek = new HashSet<DayOfWeek>
+        {
+            DayOfWeek.Monday, DayOfWeek.Tuesday, DayOfWeek.Wednesday, DayOfWeek.Thursday, DayOfWeek.Friday
+        };
+
+        for (var month = 1; month <= 12; month++)
+        {
+            for (var day = 1; day <= 7; day++)
+            {
+                var date = new DateTime(2024, month, day);
+                var expected = expectedMonths.Contains(month) && expectedDaysOfWeek.Contains(date.DayOfWeek);
+                expression.WillRunOn(date).ShouldBe(expected, $"{date:yyyy-MM-dd} ({date.DayOfWeek})");
+            }
+        }
+    }
+
+    [Fact]
     public void WillRunOn_WithDayOfWeekSeven_MatchesSundayJustLikeZero()
     {
         // Per the cron specification, "7" is an alias for Sunday. CronExpression stores "7"

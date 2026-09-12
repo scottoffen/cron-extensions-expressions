@@ -27,8 +27,8 @@ These are the exceptions the library can raise, ordered roughly by how often you
 
 | Scenario                                                          | Exception                                | How to fix                                                                                     |
 | ------------------------------------------------------------------- | ------------------------------------------ | ------------------------------------------------------------------------------------------------ |
-| Non-numeric or malformed token (`a`, `1a`, `1-2-3`, `1/2/3`)       | `FormatException`                        | Check for names (`MON`), macros (`@daily`), or a repeated `/`.                                 |
-| A parsed string without exactly five fields                        | `FormatException`                        | Supply all five fields; extra spaces between them are fine.                                    |
+| Non-numeric or malformed token (`a`, `1a`, `1-2-3`, `1/2/3`)       | `FormatException`                        | Check for a misspelled name or a repeated `/`. Names are only recognized on `Month` and `DayOfWeek` - see [Month and Day-of-Week Names](./cron-format.md#month-and-day-of-week-names). |
+| A parsed string without exactly five fields, or an unrecognized macro (`@reboot`, `@foo`) | `FormatException`                        | Supply all five fields, or use a recognized macro - see [Macros](./cron-format.md#macros). Extra spaces between fields are fine.  |
 | An empty field, such as `OnHours()` with no arguments              | `FormatException`                        | Guard against passing an empty array.                                                          |
 | Value outside the field's range (`8` for `DayOfWeek`)              | `ArgumentOutOfRangeException`            | See the range column in [Cron Expression Format](./cron-format.md). `DayOfWeek` allows 0–7.    |
 | Range start not less than end (`6-3`, `5-5`)                       | `ArgumentOutOfRangeException`            | To express a single value, assign it directly rather than as a range.                          |

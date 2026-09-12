@@ -52,13 +52,25 @@ Direct assignment is the only way to express a field that the fluent helpers do 
 var mixed = new CronExpression { Minute = "0,30,*/15" };
 ```
 
+`Month` and `DayOfWeek` also accept three-letter names (`JAN`-`DEC`, `SUN`-`SAT`) anywhere a numeric value is accepted, through the constructor, `Parse`, or direct assignment alike:
+
+```csharp
+var weekdaysFirstHalfOfYear = new CronExpression(month: "JAN-JUN", dayOfWeek: "MON-FRI");
+weekdaysFirstHalfOfYear.Month; // "1-6" - names are translated to numeric immediately
+```
+
+See [Month and Day-of-Week Names](./cron-format.md#month-and-day-of-week-names) for the full rules.
+
 ## Parsing
 
-`Parse` throws a `FormatException` if the string does not contain exactly five parts. Runs of consecutive spaces are tolerated, since empty entries are discarded before the parts are counted.
+`Parse` also accepts the standard crontab macros (`@daily`, `@hourly`, and the like) case-insensitively, as the entire trimmed value in place of the five fields - a macro is expanded to its five-field equivalent before the rest of parsing runs. Otherwise, `Parse` throws a `FormatException` if the string does not contain exactly five parts. Runs of consecutive spaces are tolerated, since empty entries are discarded before the parts are counted.
 
 Each part is then assigned through the corresponding property, so `Parse` also propagates any validation error those setters raise. A string with the right number of parts but a bad value fails with `ArgumentOutOfRangeException` or `NotSupportedException` rather than `FormatException`.
 
 ```csharp
+// Macro - expanded before parsing continues
+CronExpression.Parse("@daily").ToCronExpression(); // "0 0 * * *"
+
 // Strict parse - throws FormatException if not exactly 5 parts
 var expr = CronExpression.Parse("0 0 * 1 *");
 
@@ -72,7 +84,7 @@ if (!CronExpression.TryParse("invalid value", out var result))
 }
 ```
 
-`TryParse` returns `false` for all of these cases and sets `expression` to `null`; it never throws.
+`TryParse` returns `false` for all of these cases and sets `expression` to `null`; it never throws. `@reboot` is not a recognized macro and fails the same way - see [Macros](./cron-format.md#macros).
 
 ## Increment Helpers
 

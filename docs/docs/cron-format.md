@@ -19,7 +19,7 @@ Expressions always have exactly five fields, in the order Kubernetes CronJobs ex
 
 ## Supported Syntax
 
-The only characters accepted in any field are `*`, digits, `,`, `-`, and `/`.
+The only characters accepted in `Minute`, `Hour`, and `Day` are `*`, digits, `,`, `-`, and `/`. `Month` and `DayOfWeek` accept those same characters plus the three-letter names described in [Month and Day-of-Week Names](#month-and-day-of-week-names) below.
 
 | Syntax       | Meaning                                          | Example  | Selects                       |
 | ------------ | -------------------------------------------------- | -------- | ------------------------------- |
@@ -39,16 +39,56 @@ The starting point is the field's own minimum, which is `0` for minute, hour, an
 
 :::
 
+## Month and Day-of-Week Names
+
+`Month` and `DayOfWeek` also accept the three-letter names most cron dialects use, case-insensitively, anywhere a numeric value is accepted - alone, in a list, or on either side of a range:
+
+| Field       | Names                                                                       |
+| ----------- | ---------------------------------------------------------------------------- |
+| `Month`     | `JAN`, `FEB`, `MAR`, `APR`, `MAY`, `JUN`, `JUL`, `AUG`, `SEP`, `OCT`, `NOV`, `DEC` |
+| `DayOfWeek` | `SUN`, `MON`, `TUE`, `WED`, `THU`, `FRI`, `SAT`                             |
+
+```csharp
+new CronExpression(month: "JAN-JUN", dayOfWeek: "MON-FRI").ToCronExpression();
+// "* * * 1-6 1-5"
+```
+
+A name is translated to its numeric equivalent the moment it's assigned. The property, and [`ToCronExpression()`](./building-expressions.md), always reflect the numeric form afterward - never the name that was given. This applies equally through the constructor, [`Parse`](./building-expressions.md), and direct assignment, since all three go through the same properties.
+
+The interval side of a step is always numeric, matching every cron dialect that accepts names in the first place: `"JAN/3"` is rejected the same way any other malformed interval would be, since a name is never valid there.
+
+There is no name for the `7` spelling of Sunday, only `SUN`, and `SUN` always becomes `0`. Assign `"7"` directly if that's the representation you want [reflected back](#sunday-is-0-or-7).
+
+## Macros
+
+[`Parse`](./building-expressions.md) also accepts the standard crontab macros, case-insensitively, as the entire trimmed value in place of the five fields:
+
+| Macro                        | Equivalent to  |
+| ----------------------------- | -------------- |
+| `@yearly` / `@annually`      | `0 0 1 1 *`    |
+| `@monthly`                   | `0 0 1 * *`    |
+| `@weekly`                    | `0 0 * * 0`    |
+| `@daily` / `@midnight`       | `0 0 * * *`    |
+| `@hourly`                    | `0 * * * *`    |
+
+```csharp
+CronExpression.Parse("@daily").ToCronExpression();
+// "0 0 * * *"
+```
+
+A macro is expanded to its five-field equivalent before the rest of parsing runs, so the resulting instance is indistinguishable from one built from the expanded fields directly - [`ToCronExpression()`](./building-expressions.md) always returns the expanded form, never the macro that produced it.
+
+`@reboot` is **not** supported. Every macro above is shorthand for one specific, already-representable five-field expression; `@reboot` means "once, when the scheduler starts," which isn't a recurring time and has no five-field schedule to expand into. It fails `Parse`'s five-part check the same way any other unrecognized single token does.
+
 ## Unsupported Syntax
 
 This library implements a deliberately small grammar. The following is valid in other cron dialects but is **not** supported here:
 
-| Not supported              | Examples                       |
-| -------------------------- | -------------------------------- |
-| Non-numeric names          | `JAN`, `DEC`, `MON`, `SUN`     |
-| Macros / nicknames         | `@daily`, `@hourly`, `@reboot` |
-| Quartz special tokens      | `?`, `L`, `W`, `#`             |
-| A seconds or year field    | `0 * * * * *` (six fields)     |
+| Not supported                             | Examples           |
+| ------------------------------------------- | -------------------- |
+| `@reboot` (no five-field schedule exists) | `@reboot`          |
+| Quartz special tokens                     | `?`, `L`, `W`, `#` |
+| A seconds or year field                   | `0 * * * * *` (six fields) |
 
 ## Field Semantics
 

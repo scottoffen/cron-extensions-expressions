@@ -24,8 +24,8 @@ public sealed class CronExpression
     /// <param name="minute">The minute component (0-59, or cron syntax). Defaults to "*".</param>
     /// <param name="hour">The hour component (0-23, or cron syntax). Defaults to "*".</param>
     /// <param name="day">The day of month component (1-31, or cron syntax). Defaults to "*".</param>
-    /// <param name="month">The month component (1-12, or cron syntax). Defaults to "*".</param>
-    /// <param name="dayOfWeek">The day of week component (0-7, where both 0 and 7 represent Sunday, or cron syntax). Defaults to "*".</param>
+    /// <param name="month">The month component (1-12, the names JAN-DEC, or cron syntax). Defaults to "*".</param>
+    /// <param name="dayOfWeek">The day of week component (0-7, where both 0 and 7 represent Sunday; the names SUN-SAT; or cron syntax). Defaults to "*".</param>
     public CronExpression(string? minute = null, string? hour = null, string? day = null, string? month = null, string? dayOfWeek = null)
     {
         Minute = minute ?? "*";
@@ -83,6 +83,14 @@ public sealed class CronExpression
     /// <summary>
     /// Gets or sets the month component of the cron expression.
     /// </summary>
+    /// <remarks>
+    /// Accepts the three-letter names <c>JAN</c> through <c>DEC</c>, case-insensitively, anywhere
+    /// a numeric value is accepted - alone, in a list, or on either side of a range (e.g.
+    /// <c>"JAN-JUN"</c>, <c>"JAN,APR,JUL,OCT"</c>). Names are translated to their numeric
+    /// equivalent immediately: the stored value, and <see cref="ToCronExpression"/>'s output,
+    /// are always numeric, never the original name. A step's interval is always numeric
+    /// regardless - <c>"JAN/3"</c> is rejected, the interval position never accepts a name.
+    /// </remarks>
     /// <exception cref="FormatException">Thrown when the value is not a valid cron expression.</exception>
     /// <exception cref="ArgumentOutOfRangeException">Thrown when the values are out of range for a valid month expression.</exception>
     public string Month
@@ -90,8 +98,9 @@ public sealed class CronExpression
         get { return _month; }
         set
         {
-            FieldValidator.Validate(value, Units.Month);
-            _month = value;
+            var translated = FieldNames.Translate(value, Units.Month);
+            FieldValidator.Validate(translated, Units.Month);
+            _month = translated;
         }
     }
 
@@ -107,6 +116,14 @@ public sealed class CronExpression
     /// equivalent: an actual Sunday satisfies either representation, alone or within a list or
     /// range.
     /// </remarks>
+    /// <remarks>
+    /// Also accepts the three-letter names <c>SUN</c> through <c>SAT</c>, case-insensitively,
+    /// anywhere a numeric value is accepted - alone, in a list, or on either side of a range
+    /// (e.g. <c>"MON-FRI"</c>). Unlike <c>7</c>, names are translated to their numeric
+    /// equivalent immediately, so <c>"SUN"</c> is always stored as <c>"0"</c>, never <c>"7"</c>;
+    /// use the numeric alias directly if <c>7</c> is what you want reflected. Step syntax
+    /// remains unsupported for this field regardless of whether names are used.
+    /// </remarks>
     /// <exception cref="FormatException">Thrown when the value is not a valid cron expression.</exception>
     /// <exception cref="ArgumentOutOfRangeException">Thrown when the values are out of range for a valid day of week expression.</exception>
     public string DayOfWeek
@@ -114,8 +131,9 @@ public sealed class CronExpression
         get { return _dayOfWeek; }
         set
         {
-            FieldValidator.Validate(value, Units.DayOfWeek);
-            _dayOfWeek = value;
+            var translated = FieldNames.Translate(value, Units.DayOfWeek);
+            FieldValidator.Validate(translated, Units.DayOfWeek);
+            _dayOfWeek = translated;
         }
     }
 
@@ -133,12 +151,23 @@ public sealed class CronExpression
     /// <summary>
     /// Parses a cron expression string into a <see cref="CronExpression"/> instance.
     /// </summary>
-    /// <param name="value">The five-part cron expression string to parse.</param>
+    /// <remarks>
+    /// Also accepts the standard crontab macros - <c>@yearly</c>/<c>@annually</c>, <c>@monthly</c>,
+    /// <c>@weekly</c>, <c>@daily</c>/<c>@midnight</c>, and <c>@hourly</c> - case-insensitively, as
+    /// the entire trimmed value in place of the five fields. A macro is expanded to its five-field
+    /// equivalent before the rest of parsing runs, so the resulting instance is indistinguishable
+    /// from one built with the expanded fields directly; <see cref="ToCronExpression"/> always
+    /// returns the expanded form, never the macro. <c>@reboot</c> is not supported - it has no
+    /// five-field schedule to expand into - and fails the same five-part check any other
+    /// unrecognized single token would.
+    /// </remarks>
+    /// <param name="value">The five-part cron expression string to parse, or a recognized macro.</param>
     /// <returns>A new <see cref="CronExpression"/> instance.</returns>
     /// <exception cref="FormatException">Thrown when the value does not contain exactly five space-separated parts.</exception>
     public static CronExpression Parse(string value)
     {
-        var parts = value.Split(_separators, StringSplitOptions.RemoveEmptyEntries);
+        var expanded = CronMacros.Expand(value);
+        var parts = expanded.Split(_separators, StringSplitOptions.RemoveEmptyEntries);
         if (parts.Length != 5)
         {
             throw new FormatException($"Invalid cron expression. Found {parts.Length} parts instead of 5.");
@@ -150,7 +179,8 @@ public sealed class CronExpression
     /// <summary>
     /// Attempts to parse a cron expression string into a <see cref="CronExpression"/> instance.
     /// </summary>
-    /// <param name="value">The five-part cron expression string to parse.</param>
+    /// <remarks>Accepts everything <see cref="Parse"/> does, including the standard crontab macros.</remarks>
+    /// <param name="value">The five-part cron expression string to parse, or a recognized macro.</param>
     /// <param name="expression">When this method returns, contains the parsed expression if successful; otherwise, <c>null</c>.</param>
     /// <returns><c>true</c> if the value was successfully parsed; otherwise, <c>false</c>.</returns>
     public static bool TryParse(string value, [NotNullWhen(true)] out CronExpression? expression)
