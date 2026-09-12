@@ -123,15 +123,17 @@ Remember that a `*/n` step counts from the field's own minimum, so `EveryXDays(2
 
 ## List Helpers
 
-Each `On*` method takes any number of `int` values, sorts them ascending, removes duplicates, and writes them as a comma-separated list.
+Each `On*` method takes any number of `int` values, sorts them ascending, removes duplicates, and writes them as a comma-separated list. `OnMonths` and `OnDaysOfWeek` also have a `string` overload accepting names, sorted and deduplicated the same way once translated to numbers.
 
-| Method                                  | Field modified | Example input   | Resulting cron field |
-| --------------------------------------- | -------------- | --------------- | -------------------- |
-| `OnMinutes(params int[] minutes)`       | Minute         | `0, 15, 30, 45` | `0,15,30,45`         |
-| `OnHours(params int[] hours)`           | Hour           | `6, 12, 18`     | `6,12,18`            |
-| `OnDays(params int[] days)`             | Day of month   | `1, 15, 31`     | `1,15,31`            |
-| `OnMonths(params int[] months)`         | Month          | `1, 6, 12`      | `1,6,12`             |
-| `OnDaysOfWeek(params int[] daysOfWeek)` | Day of week    | `1, 3, 5`       | `1,3,5`              |
+| Method                                     | Field modified | Example input   | Resulting cron field |
+| ------------------------------------------- | -------------- | --------------- | -------------------- |
+| `OnMinutes(params int[] minutes)`          | Minute         | `0, 15, 30, 45` | `0,15,30,45`         |
+| `OnHours(params int[] hours)`              | Hour           | `6, 12, 18`     | `6,12,18`            |
+| `OnDays(params int[] days)`                | Day of month   | `1, 15, 31`     | `1,15,31`            |
+| `OnMonths(params int[] months)`            | Month          | `1, 6, 12`      | `1,6,12`             |
+| `OnMonths(params string[] months)`         | Month          | `"JAN", "JUN"`  | `1,6`                |
+| `OnDaysOfWeek(params int[] daysOfWeek)`     | Day of week    | `1, 3, 5`       | `1,3,5`              |
+| `OnDaysOfWeek(params string[] daysOfWeek)`  | Day of week    | `"MON", "FRI"`  | `1,5`                |
 
 ```csharp
 // Top and bottom of every hour
@@ -139,6 +141,9 @@ new CronExpression().OnMinutes(0, 30).ToCronExpression(); // "0,30 * * * *"
 
 // Quarterly, by naming the months
 new CronExpression().OnMonths(1, 4, 7, 10).ToCronExpression(); // "* * * 1,4,7,10 *"
+
+// The same, using names instead - input order doesn't matter, the result is always sorted numerically
+new CronExpression().OnMonths("JAN", "APR", "JUL", "OCT").ToCronExpression(); // "* * * 1,4,7,10 *"
 
 // Noon on Monday, Wednesday, and Friday
 new CronExpression().OnHours(12).OnDaysOfWeek(1, 3, 5).ToCronExpression(); // "* 12 * * 1,3,5"
@@ -149,17 +154,21 @@ new CronExpression().OnHours(12, 6, 6).Hour; // "6,12"
 
 `OnDaysOfWeek` treats `0` and `7` as distinct values, so `OnDaysOfWeek(0, 7)` keeps both and sorts to `"0,7"` rather than collapsing to a single `0`. Both still match Sunday.
 
+The `string` overloads of `OnMonths` and `OnDaysOfWeek` don't take a required leading argument the way you might expect for disambiguation, they're a second `params` overload alongside the `int` one. That's deliberate: a required first argument would break the common `OnMonths([.. someArray])` call style used above, since the compiler can no longer tell whether the spread should fill the leading parameter or the trailing array. See [List Helpers](./api-reference.md#list-helpers) in the API reference for the full reasoning. Every name here is a standalone list value, never the end of a range, so `SUN` always means `0` in `OnDaysOfWeek`, unlike in `RangeOfWeek` below.
+
 ## Range Helpers
 
-Each `RangeOf*` method writes an inclusive `start-end` range. The start value must be **strictly less than** the end value.
+Each `RangeOf*` method writes an inclusive `start-end` range. The start value must be **strictly less than** the end value. `RangeOfMonths` and `RangeOfWeek` also accept names, on either side, in any combination with a number.
 
-| Method                               | Field modified | Example input | Resulting cron field |
-| ------------------------------------ | -------------- | ------------- | -------------------- |
-| `RangeOfMinutes(int start, int end)` | Minute         | `0, 30`       | `0-30`               |
-| `RangeOfHours(int start, int end)`   | Hour           | `8, 17`       | `8-17`               |
-| `RangeOfDays(int start, int end)`    | Day of month   | `1, 15`       | `1-15`               |
-| `RangeOfMonths(int start, int end)`  | Month          | `1, 6`        | `1-6`                |
-| `RangeOfWeek(int start, int end)`    | Day of week    | `1, 5`        | `1-5`                |
+| Method                                     | Field modified | Example input  | Resulting cron field |
+| ------------------------------------------- | -------------- | -------------- | -------------------- |
+| `RangeOfMinutes(int start, int end)`       | Minute         | `0, 30`        | `0-30`               |
+| `RangeOfHours(int start, int end)`         | Hour           | `8, 17`        | `8-17`               |
+| `RangeOfDays(int start, int end)`          | Day of month   | `1, 15`        | `1-15`               |
+| `RangeOfMonths(int start, int end)`        | Month          | `1, 6`         | `1-6`                |
+| `RangeOfMonths(string start, string end)`  | Month          | `"JAN", "JUN"` | `1-6`                |
+| `RangeOfWeek(int start, int end)`          | Day of week    | `1, 5`         | `1-5`                |
+| `RangeOfWeek(string start, string end)`    | Day of week    | `"MON", "FRI"` | `1-5`                |
 
 ```csharp
 // Business hours
@@ -168,11 +177,18 @@ new CronExpression().RangeOfHours(8, 17).ToCronExpression(); // "* 8-17 * * *"
 // Weekdays only
 new CronExpression().RangeOfWeek(1, 5).ToCronExpression(); // "* * * * 1-5"
 
+// The same, using names instead
+new CronExpression().RangeOfWeek("MON", "FRI").ToCronExpression(); // "* * * * 1-5"
+
 // First half of the year
 new CronExpression().RangeOfMonths(1, 6).ToCronExpression(); // "* * * 1-6 *"
+
+// A number on one side and a name on the other both work, in either position
+new CronExpression().RangeOfMonths(1, "JUN").ToCronExpression();  // "* * * 1-6 *"
+new CronExpression().RangeOfMonths("JAN", 6).ToCronExpression();  // "* * * 1-6 *"
 ```
 
-`RangeOfWeek` accepts `7` as the end of a range to reach Sunday, so `RangeOfWeek(5, 7)` produces `"5-7"` - Friday through Sunday.
+`RangeOfWeek` accepts `7` as the end of a range to reach Sunday, so `RangeOfWeek(5, 7)` produces `"5-7"` - Friday through Sunday. The name `SUN` behaves the same way as the end of a range: `RangeOfWeek("MON", "SUN")` produces `"1-7"`, not `"1-0"`, since `SUN` becomes `7` rather than `0` specifically at the end of a range - see [Month and Day-of-Week Names](./cron-format.md#month-and-day-of-week-names) for the full rule.
 
 ## Chaining
 

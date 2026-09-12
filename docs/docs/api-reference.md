@@ -60,25 +60,37 @@ There are no day-of-week increment methods, because step syntax is not valid in 
 
 These extension methods set a field to a sorted, deduplicated comma-separated list.
 
-| Method                                  | Sets        |
-| --------------------------------------- | ----------- |
-| `OnMinutes(params int[] minutes)`       | `Minute`    |
-| `OnHours(params int[] hours)`           | `Hour`      |
-| `OnDays(params int[] days)`             | `Day`       |
-| `OnMonths(params int[] months)`         | `Month`     |
-| `OnDaysOfWeek(params int[] daysOfWeek)` | `DayOfWeek` |
+| Method                                     | Sets        |
+| ------------------------------------------- | ----------- |
+| `OnMinutes(params int[] minutes)`          | `Minute`    |
+| `OnHours(params int[] hours)`              | `Hour`      |
+| `OnDays(params int[] days)`                | `Day`       |
+| `OnMonths(params int[] months)`            | `Month`     |
+| `OnMonths(params string[] months)`         | `Month`     |
+| `OnDaysOfWeek(params int[] daysOfWeek)`     | `DayOfWeek` |
+| `OnDaysOfWeek(params string[] daysOfWeek)`  | `DayOfWeek` |
+
+The `string` overloads of `OnMonths` and `OnDaysOfWeek` accept the same names `Month` and `DayOfWeek` do (see [Month and Day-of-Week Names](./cron-format.md#month-and-day-of-week-names)); the result is still sorted and deduplicated numerically, so a name and its numeric equivalent passed together count as one value. Each is a separate overload alongside the `int` version, not a replacement for it - deliberately so, since giving either one a required leading argument to disambiguate a theoretical empty call would break the common `OnMonths([.. someArray])` call style. A genuinely empty call (`OnMonths()`) was never meaningful (it already throws `FormatException` at runtime) and remains unreachable, now as a compile-time ambiguous-overload error instead. Every name in these methods is a standalone list value, never the end of a range, so `SUN` always means `0` here, unlike in `RangeOfWeek` below.
 
 ## Range Helpers
 
 These extension methods set a field to an inclusive `start-end` range. The `start` value must be strictly less than `end`.
 
-| Method                               | Sets        |
-| ------------------------------------ | ----------- |
-| `RangeOfMinutes(int start, int end)` | `Minute`    |
-| `RangeOfHours(int start, int end)`   | `Hour`      |
-| `RangeOfDays(int start, int end)`    | `Day`       |
-| `RangeOfMonths(int start, int end)`  | `Month`     |
-| `RangeOfWeek(int start, int end)`    | `DayOfWeek` |
+| Method                                        | Sets        |
+| ------------------------------------------------ | ----------- |
+| `RangeOfMinutes(int start, int end)`            | `Minute`    |
+| `RangeOfHours(int start, int end)`              | `Hour`      |
+| `RangeOfDays(int start, int end)`               | `Day`       |
+| `RangeOfMonths(int start, int end)`             | `Month`     |
+| `RangeOfMonths(string start, string end)`       | `Month`     |
+| `RangeOfMonths(int start, string end)`          | `Month`     |
+| `RangeOfMonths(string start, int end)`          | `Month`     |
+| `RangeOfWeek(int start, int end)`               | `DayOfWeek` |
+| `RangeOfWeek(string start, string end)`         | `DayOfWeek` |
+| `RangeOfWeek(int start, string end)`            | `DayOfWeek` |
+| `RangeOfWeek(string start, int end)`            | `DayOfWeek` |
+
+The `string` and mixed `int`/`string` overloads of `RangeOfMonths` and `RangeOfWeek` accept names on either side, resolved the same way direct assignment resolves them - including `RangeOfWeek`'s context-sensitive handling of `SUN`, which becomes `7` rather than `0` when it's the `end` value (e.g. `RangeOfWeek("MON", "SUN")` produces `"1-7"`), since a range's `end` can never validly be `0`. See [Month and Day-of-Week Names](./cron-format.md#month-and-day-of-week-names) for the full rules.
 
 ## Execution Helpers
 

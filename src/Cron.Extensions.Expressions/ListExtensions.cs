@@ -58,6 +58,25 @@ public static class ListExtensions
     }
 
     /// <summary>
+    /// Sets the month component of the cron expression to a list of months, given by name.
+    /// </summary>
+    /// <param name="expression">The cron expression being extended.</param>
+    /// <param name="months">The month names to include in the cron schedule (e.g. <c>"JAN"</c>).</param>
+    /// <returns>The same <see cref="CronExpression"/> instance with the month component set to the provided list.</returns>
+    /// <remarks>
+    /// Accepts the three-letter names <c>JAN</c> through <c>DEC</c>, case-insensitively, and an
+    /// already-numeric string (e.g. <c>"6"</c>) works too, since each value is resolved the same
+    /// way <see cref="CronExpression.Month"/> resolves it. Each name is normalized to its numeric
+    /// value and this then delegates to <see cref="OnMonths(CronExpression, int[])"/>, so the
+    /// sorting, deduplication, and validation live in exactly one place. Calling this with zero
+    /// values is not supported - it resolves to this overload only when
+    /// <see cref="OnMonths(CronExpression, int[])"/> also could, at which point the call is
+    /// ambiguous and neither is used in practice.
+    /// </remarks>
+    public static CronExpression OnMonths(this CronExpression expression, params string[] months) =>
+        expression.OnMonths(ToNumbers(months, Units.Month));
+
+    /// <summary>
     /// Sets the day of the week component of the cron expression to a list of days of the week.
     /// </summary>
     /// <param name="expression">The cron expression being extended.</param>
@@ -69,4 +88,27 @@ public static class ListExtensions
         expression.DayOfWeek = string.Join(",", daysOfWeek.OrderBy(x => x).Distinct());
         return expression;
     }
+
+    /// <summary>
+    /// Sets the day of the week component of the cron expression to a list of days of the week, given by name.
+    /// </summary>
+    /// <param name="expression">The cron expression being extended.</param>
+    /// <param name="daysOfWeek">The day-of-week names to include in the cron schedule (e.g. <c>"MON"</c>).</param>
+    /// <returns>The same <see cref="CronExpression"/> instance with the day-of-week component set to the provided list.</returns>
+    /// <remarks>
+    /// Accepts the three-letter names <c>SUN</c> through <c>SAT</c>, case-insensitively, and an
+    /// already-numeric string (e.g. <c>"6"</c>) works too, since each value is resolved the same
+    /// way <see cref="CronExpression.DayOfWeek"/> resolves it. Every name here is a standalone
+    /// list value, not the end of a range, so <c>SUN</c> always means <c>0</c> in this overload -
+    /// the end-of-range translation of <c>SUN</c> to <c>7</c> only applies within a single
+    /// <c>RangeOfWeek</c> value, never across separate list entries. Each name is normalized to
+    /// its numeric value and this then delegates to
+    /// <see cref="OnDaysOfWeek(CronExpression, int[])"/>, so the sorting, deduplication, and
+    /// validation live in exactly one place.
+    /// </remarks>
+    public static CronExpression OnDaysOfWeek(this CronExpression expression, params string[] daysOfWeek) =>
+        expression.OnDaysOfWeek(ToNumbers(daysOfWeek, Units.DayOfWeek));
+
+    private static int[] ToNumbers(string[] values, Units unit) =>
+        values.Select(v => int.Parse(FieldNames.Translate(v, unit))).ToArray();
 }
