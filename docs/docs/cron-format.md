@@ -90,11 +90,10 @@ A macro is expanded to its five-field equivalent before the rest of parsing runs
 
 This library implements a deliberately small grammar. The following is valid in other cron dialects but is **not** supported here:
 
-| Not supported                             | Examples           |
-| ------------------------------------------- | -------------------- |
-| `@reboot` (no five-field schedule exists) | `@reboot`          |
-| Quartz special tokens                     | `?`, `L`, `W`, `#` |
-| A seconds or year field                   | `0 * * * * *` (six fields) |
+| Not supported                             | Examples                                                    |
+| ------------------------------------------- | -------------------------------------------------------------- |
+| `@reboot` (no five-field schedule exists) | `@reboot`                                                   |
+| Quartz cron expressions                   | `?`, `L`, `W`, `#`, or a seconds or year field (`0 * * * * *`) |
 
 ## Field Semantics
 

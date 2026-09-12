@@ -7,7 +7,7 @@ Easily create and parse cron expressions using a fluent syntax.
 
 :::important
 
-This library implements standard cron expressions - the five-field syntax, including names, macros, ranges, and lists, that predates Kubernetes by decades. It is fully compatible with Kubernetes CronJob schedules, but does not implement Quartz's extensions (a seconds or year field, or the `?`, `L`, `W`, `#` tokens).
+This library implements standard cron expressions - the five-field syntax, including names, macros, ranges, and lists, that predates Kubernetes by decades. It is fully compatible with Kubernetes CronJob schedules, but does not support Quartz cron expressions.
 
 :::
 
