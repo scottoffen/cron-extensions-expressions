@@ -22,10 +22,46 @@ Returned times always have seconds set to `00`, and the seconds component of an 
 
 ## Method reference
 
+`GetNextExecution` computes a schedule's next run time; `WillRunOn` checks a single instant against it:
+
 | Method                                                                                   | Description                                                                                         | Parameters                                                                                                                                                                                       | Returns                                            |
 | ----------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------- |
 | `GetNextExecution(DateTime? start = null, int maxSearchYears = DefaultMaxSearchYears)` | Returns the next valid run time from the provided start date or `DateTime.Now` if none is provided. | `start`: optional `DateTime` representing when to begin searching. `maxSearchYears`: how many years past `start` to search before giving up, default `10` (see below), always enforced. | `DateTime` of the next execution (seconds = 00). |
 | `WillRunOn(DateTime date)`                                                                 | Determines if the cron expression will run at the specified date/time.                              | `date`: the moment to test against the cron expression.                                                                                                                                          | `bool` — `true` if the expression matches that time. |
+
+## Matching rules
+
+Both methods decide whether a field matches a candidate value using the same pattern rules:
+
+| Pattern      | Behavior                                                                       |
+| ------------ | ------------------------------------------------------------------------------ |
+| `*`          | Matches any value                                                              |
+| `a,b,c`      | Matches any listed value                                                       |
+| `a-b`        | Matches inclusive range from `a` to `b`                                        |
+| `start/step` | Matches `start`, `start + step`, `start + 2×step`, … Never matches below `start` |
+| `*/step`     | Same, with `start` taken as the **field's minimum**: `0` for minute, hour, and day of week; `1` for day of month and month |
+
+Because `*/step` counts from the field's own minimum, `*/2` in the day field selects the 1st, 3rd, 5th, and so on through the 31st, not the even-numbered days. In the minute field, where the minimum is `0`, `*/15` selects 0, 15, 30, and 45 as expected.
+
+`DayOfWeek` is the one field where a value can match without being numerically equal: per the cron specification, `0` and `7` both mean Sunday. `CronExpression` stores `7` exactly as given (see [`CronExpression`](./cron-expressions.md)) rather than rewriting it, so it's `WillRunOn` and `GetNextExecution` that treat an actual Sunday as satisfying either representation - alone (`"7"`), in a list (`"1,7"`), or at the end of a range (`"5-7"`, meaning Friday through Sunday).
+
+### Day and day of week
+
+When **both** the day-of-month and day-of-week fields are restricted (neither is `*`), a date matches if **either** field matches. This is standard cron behavior, and it is what Kubernetes applies.
+
+```csharp
+// Both day fields restricted - fires on the 1st of the month OR any Monday
+var either = CronExpression.Parse("0 9 1 * 1");
+```
+
+When at most one of the two is restricted, both must match, which amounts to letting the restricted field decide, since a `*` field always matches.
+
+```csharp
+// Only DayOfWeek restricted - weekdays only, as written
+var weekdays = CronExpression.Parse("30 6 * * 1-5");
+```
+
+A field counts as restricted whenever it is anything other than `*`, so `*/2` is restricted even though it selects many days.
 
 ## GetNextExecution
 
@@ -61,39 +97,9 @@ As a backstop, the search also has a `maxSearchYears` parameter (default `10`, e
 
 Checks whether the provided date/time matches the cron expression. The minute, hour, and month fields must each match, and the two day fields are combined by the rule described in [Day and day of week](#day-and-day-of-week). Only the minute, hour, day, month, and day-of-week components of `date` are considered, so the seconds value has no effect on the result.
 
-### Matching rules
-
-| Pattern      | Behavior                                                                       |
-| ------------ | ------------------------------------------------------------------------------ |
-| `*`          | Matches any value                                                              |
-| `a,b,c`      | Matches any listed value                                                       |
-| `a-b`        | Matches inclusive range from `a` to `b`                                        |
-| `start/step` | Matches `start`, `start + step`, `start + 2×step`, … Never matches below `start` |
-| `*/step`     | Same, with `start` taken as the **field's minimum**: `0` for minute, hour, and day of week; `1` for day of month and month |
-
-Because `*/step` counts from the field's own minimum, `*/2` in the day field selects the 1st, 3rd, 5th, and so on through the 31st, not the even-numbered days. In the minute field, where the minimum is `0`, `*/15` selects 0, 15, 30, and 45 as expected.
-
-`DayOfWeek` is the one field where a value can match without being numerically equal: per the cron specification, `0` and `7` both mean Sunday. `CronExpression` stores `7` exactly as given (see [`CronExpression`](./cron-expressions.md)) rather than rewriting it, so it's `WillRunOn` and `GetNextExecution` that treat an actual Sunday as satisfying either representation - alone (`"7"`), in a list (`"1,7"`), or at the end of a range (`"5-7"`, meaning Friday through Sunday).
-
-### Day and day of week
-
-When **both** the day-of-month and day-of-week fields are restricted (neither is `*`), a date matches if **either** field matches. This is standard cron behavior, and it is what Kubernetes applies.
-
-```csharp
-// Both day fields restricted - fires on the 1st of the month OR any Monday
-var either = CronExpression.Parse("0 9 1 * 1");
-```
-
-When at most one of the two is restricted, both must match, which amounts to letting the restricted field decide, since a `*` field always matches.
-
-```csharp
-// Only DayOfWeek restricted - weekdays only, as written
-var weekdays = CronExpression.Parse("30 6 * * 1-5");
-```
-
-A field counts as restricted whenever it is anything other than `*`, so `*/2` is restricted even though it selects many days.
-
 ## Usage examples
+
+A few complete examples combining `GetNextExecution` and `WillRunOn`:
 
 ```csharp
 var expr = CronExpression.Parse("*/15 * * * *");
@@ -124,18 +130,3 @@ semiMonthly9.WillRunOn(new DateTime(2025, 10, 15, 9, 0, 0)); // true
 var nextSemi = semiMonthly9.GetNextExecution(new DateTime(2025, 10, 15, 9, 0, 0));
 // nextSemi == 2025-11-01 09:00:00
 ```
-
-## Notes & caveats
-
-* **Day/DayOfWeek matching:** These two fields are combined with OR, following standard cron. See [Day and day of week](#day-and-day-of-week) below.
-* **DayOfWeek's 7-for-Sunday alias:** See [Matching rules](#matching-rules) above - `0` and `7` are treated as equivalent when matching, including within lists and ranges.
-* **Validation:** `WillRunOn` performs no validation of its own; invalid combinations are expected to have failed earlier, at assignment or at `ToCronExpression()`. `GetNextExecution` additionally validates the day/month combination itself and enforces a search horizon - see [Unsatisfiable expressions and the search horizon](#getnextexecution) above.
-* **Local vs UTC:** Uses the provided `DateTime.Kind` and performs no timezone conversion. See the daylight saving time warning above before using a local `start`.
-* **Step matching:** A step matches `start`, then every `step` values after it, and never a value below `start`. For `*/n` the start is the field's own minimum, which is `0` for minute, hour, and day of week, but `1` for day of month and month.
-* **Performance:** Iterates to the next matching slot. Typical cron schedules resolve quickly even for sparse patterns.
-
-## Testing tips
-
-* Ensure `GetNextExecution(t)` never returns `t`.
-* Verify correct rollovers (minute/hour/day boundaries).
-* Include cases for each expression type: wildcard, list, range, and step.
