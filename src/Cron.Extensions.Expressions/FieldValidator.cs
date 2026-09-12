@@ -50,10 +50,10 @@ internal static class FieldValidator
 
         if (value.Contains(','))
             ValidateCommaSeparated(value, unit);
-        else if (value.Contains('-'))
-            ValidateRange(value, unit);
         else if (value.Contains('/'))
             ValidateStep(value, unit);
+        else if (value.Contains('-'))
+            ValidateRange(value, unit);
         else
             ValidateSingle(value, unit);
     }
@@ -92,10 +92,19 @@ internal static class FieldValidator
             throw new NotSupportedException("Interval values are not supported for day of week.");
 
         var values = value.Split(_stepSeparator, 2);
-        var start = (values[0] == _wildcard) ? -1 : int.Parse(values[0]);
+        var rangePart = values[0];
         var interval = int.Parse(values[1]);
 
-        if (start >= 0) Validate(start, unit);
+        // The part before the slash may be the wildcard ("*/10"), a bare value ("5/10"), or a
+        // full range ("5-10/2") - validate whichever shape it is exactly as it would be
+        // validated with no step attached at all, before considering the interval.
+        if (rangePart != _wildcard)
+        {
+            if (rangePart.Contains('-'))
+                ValidateRange(rangePart, unit);
+            else
+                Validate(int.Parse(rangePart), unit);
+        }
 
         // Check the interval-specific rule before the generic field-range check. An interval
         // is a step size, not a field value, so a zero or negative interval should report

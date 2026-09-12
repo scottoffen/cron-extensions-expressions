@@ -29,8 +29,9 @@ The only characters accepted in any field are `*`, digits, `,`, `-`, and `/`.
 | `a-b`        | An inclusive range                               | `9-17`   | Hours 9 through 17             |
 | `*/step`     | Every `step`th value from the field's minimum    | `*/15`   | Minutes 0, 15, 30, 45          |
 | `start/step` | Every `step`th value beginning at `start`        | `5/15`   | Minutes 5, 20, 35, 50          |
+| `a-b/step`   | Every `step`th value within an inclusive range   | `9-17/3` | Hours 9, 12, 15                |
 
-A comma-separated list is validated one element at a time, so each element may itself be a single value or a range, and - for every field except `DayOfWeek` - a step as well. Both `5-10,15-31` and `0,30,*/15` are accepted.
+A comma-separated list is validated one element at a time, so each element may itself be a single value, a range, or - for every field except `DayOfWeek` - a step, including a step combined with a range. `5-10,15-31`, `0,30,*/15`, and `9-17/3,20-23` are all accepted.
 
 :::note[A `*/step` counts from the field's minimum, not from zero]
 
@@ -47,7 +48,6 @@ This library implements a deliberately small grammar. The following is valid in 
 | Non-numeric names          | `JAN`, `DEC`, `MON`, `SUN`     |
 | Macros / nicknames         | `@daily`, `@hourly`, `@reboot` |
 | Quartz special tokens      | `?`, `L`, `W`, `#`             |
-| Range combined with a step | `1-10/2`                       |
 | A seconds or year field    | `0 * * * * *` (six fields)     |
 
 ## Field Semantics

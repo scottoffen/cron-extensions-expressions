@@ -634,4 +634,25 @@ public class CronExpressionTests
         result.ShouldBeFalse();
         schedule.ShouldBeNull();
     }
+
+    [Fact]
+    public void Parse_RangeWithStep_RoundTripsThroughToCronExpression()
+    {
+        // "5-10/2" previously failed to parse at all (the Minute setter rejected it), so a
+        // round trip through Parse -> ToCronExpression is the end-to-end confirmation that
+        // range-combined-with-step is now accepted, not just the underlying validator.
+        var value = "5-10/2 8-17/3 1-31/5 1-12/2 *";
+
+        var expression = CronExpression.Parse(value);
+
+        expression.ShouldSatisfyAllConditions(
+            () => expression.Minute.ShouldBe("5-10/2"),
+            () => expression.Hour.ShouldBe("8-17/3"),
+            () => expression.Day.ShouldBe("1-31/5"),
+            () => expression.Month.ShouldBe("1-12/2"),
+            () => expression.DayOfWeek.ShouldBe("*")
+        );
+
+        expression.ToCronExpression().ShouldBe(value);
+    }
 }

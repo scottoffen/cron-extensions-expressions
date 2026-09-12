@@ -220,6 +220,73 @@ public class FieldValidatorTests
 
     #endregion
 
+    #region Validate(string, Units) - range combined with a step
+
+    [Fact]
+    public void Validate_String_RangeWithStep_Valid_DoesNotThrow()
+    {
+        // "5-10/2" previously fell into ValidateRange (because '-' was checked before '/'),
+        // which tried to int.Parse("10/2") as the range's end value and threw a FormatException.
+        // A range combined with a step must now be recognized and validated as a step whose
+        // start is itself a range.
+        Should.NotThrow(() => FieldValidator.Validate("5-10/2", Units.Minute));
+        Should.NotThrow(() => FieldValidator.Validate("8-17/3", Units.Hour));
+        Should.NotThrow(() => FieldValidator.Validate("1-31/5", Units.Day));
+        Should.NotThrow(() => FieldValidator.Validate("1-12/2", Units.Month));
+    }
+
+    [Fact]
+    public void Validate_String_RangeWithStep_StartGreaterThanOrEqualToEnd_ThrowsArgumentOutOfRangeException()
+    {
+        // The range portion is validated exactly as it would be with no step attached, so a
+        // reversed range is still rejected the same way "10-5" alone would be.
+        var ex = Should.Throw<ArgumentOutOfRangeException>(() => FieldValidator.Validate("10-5/2", Units.Minute));
+        ex.Message.ShouldContain("Start value 10");
+        ex.Message.ShouldContain("must be less than end value 5");
+    }
+
+    [Fact]
+    public void Validate_String_RangeWithStep_RangeOutOfBounds_ThrowsArgumentOutOfRangeException()
+    {
+        Should.Throw<ArgumentOutOfRangeException>(() => FieldValidator.Validate("60-70/2", Units.Minute));
+        Should.Throw<ArgumentOutOfRangeException>(() => FieldValidator.Validate("0-31/5", Units.Day));
+    }
+
+    [Fact]
+    public void Validate_String_RangeWithStep_IntervalZero_ThrowsArgumentOutOfRangeException()
+    {
+        var ex = Should.Throw<ArgumentOutOfRangeException>(() => FieldValidator.Validate("5-10/0", Units.Minute));
+        ex.Message.ShouldContain("Interval value 0");
+        ex.Message.ShouldContain("must be greater than 0");
+    }
+
+    [Fact]
+    public void Validate_String_RangeWithStep_IntervalAboveFieldMaximum_ReportsRangeError()
+    {
+        var ex = Should.Throw<ArgumentOutOfRangeException>(() => FieldValidator.Validate("5-10/60", Units.Minute));
+        ex.Message.ShouldContain("must be between 0 and 59");
+    }
+
+    [Fact]
+    public void Validate_String_RangeWithStep_DayOfWeek_ThrowsNotSupportedException()
+    {
+        // Step syntax is unsupported for DayOfWeek regardless of shape - combining it with a
+        // range must not slip past that check.
+        Should.Throw<NotSupportedException>(() => FieldValidator.Validate("1-5/2", Units.DayOfWeek))
+            .Message.ShouldContain("Interval values are not supported for day of week");
+    }
+
+    [Fact]
+    public void Validate_String_RangeWithStep_InCommaList_ValidatesEachElement()
+    {
+        // A range-with-step element inside a comma list must be validated the same way it
+        // would be on its own.
+        Should.NotThrow(() => FieldValidator.Validate("5-10/2,20-25", Units.Minute));
+        Should.Throw<ArgumentOutOfRangeException>(() => FieldValidator.Validate("5-10/2,60-70", Units.Minute));
+    }
+
+    #endregion
+
     #region Validate(int, Units)
 
     [Fact]

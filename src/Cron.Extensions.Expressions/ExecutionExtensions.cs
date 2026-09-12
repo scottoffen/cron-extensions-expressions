@@ -178,19 +178,37 @@ public static class ExecutionExtensions
             return values.Any(v => CanExecute(value, v, unit));
         }
 
+        if (expression.Contains('/'))
+        {
+            var parts = expression.Split('/');
+            var rangePart = parts[0];
+            var step = int.Parse(parts[1]);
+
+            int start, end;
+            if (rangePart == _wildcard)
+            {
+                start = FieldValidator.GetMinValue(unit);
+                end = FieldValidator.GetMaxValue(unit);
+            }
+            else if (rangePart.Contains('-'))
+            {
+                var bounds = rangePart.Split('-');
+                start = int.Parse(bounds[0]);
+                end = int.Parse(bounds[1]);
+            }
+            else
+            {
+                start = int.Parse(rangePart);
+                end = FieldValidator.GetMaxValue(unit);
+            }
+
+            return value >= start && value <= end && (value - start) % step == 0;
+        }
+
         if (expression.Contains('-'))
         {
             var values = expression.Split('-');
             return value >= int.Parse(values[0]) && value <= int.Parse(values[1]);
-        }
-
-        if (expression.Contains('/'))
-        {
-            var values = expression.Split('/');
-            var start = (values[0] == _wildcard) ? FieldValidator.GetMinValue(unit) : int.Parse(values[0]);
-            var step = int.Parse(values[1]);
-
-            return value >= start && (value - start) % step == 0;
         }
 
         return value == int.Parse(expression);

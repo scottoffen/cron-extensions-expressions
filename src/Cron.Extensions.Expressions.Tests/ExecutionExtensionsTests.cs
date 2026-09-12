@@ -721,6 +721,42 @@ public class ExecutionExtensionsTests
     }
 
     [Fact]
+    public void WillRunOn_WithRangeAndStep_ShouldMatchOnlyStepsWithinTheRange()
+    {
+        // "5-10/2" should match 5, 7, and 9 - never a value outside 5-10, even where the step
+        // would otherwise land on it (e.g. 11).
+        var expression = new CronExpression(minute: "5-10/2");
+
+        var expectedMinutes = new HashSet<int> { 5, 7, 9 };
+
+        for (var minute = 0; minute <= 59; minute++)
+        {
+            var expected = expectedMinutes.Contains(minute);
+            var date = new DateTime(2024, 10, 1, 0, minute, 0);
+            var actual = expression.WillRunOn(date);
+            actual.ShouldBe(expected, $"minute: {minute}");
+        }
+    }
+
+    [Fact]
+    public void WillRunOn_WithRangeAndStep_UpperBoundIsExclusiveOfValuesPastTheRangeEnd()
+    {
+        // "8-17/3" should match 8, 11, 14, 17 - the step would next land on 20, which is
+        // outside the range and must not match even though 20 is a valid hour.
+        var expression = new CronExpression(hour: "8-17/3");
+
+        var expectedHours = new HashSet<int> { 8, 11, 14, 17 };
+
+        for (var hour = 0; hour <= 23; hour++)
+        {
+            var expected = expectedHours.Contains(hour);
+            var date = new DateTime(2024, 10, 1, hour, 0, 0);
+            var actual = expression.WillRunOn(date);
+            actual.ShouldBe(expected, $"hour: {hour}");
+        }
+    }
+
+    [Fact]
     public void WillRunOn_WithDayOfWeekSeven_MatchesSundayJustLikeZero()
     {
         // Per the cron specification, "7" is an alias for Sunday. CronExpression stores "7"

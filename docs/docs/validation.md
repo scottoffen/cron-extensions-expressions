@@ -27,7 +27,7 @@ These are the exceptions the library can raise, ordered roughly by how often you
 
 | Scenario                                                          | Exception                                | How to fix                                                                                     |
 | ------------------------------------------------------------------- | ------------------------------------------ | ------------------------------------------------------------------------------------------------ |
-| Non-numeric or malformed token (`a`, `1a`, `1-2-3`, `1/2/3`)       | `FormatException`                        | Check for names (`MON`), macros (`@daily`), a range with a step (`1-10/2`), or a repeated `/`.  |
+| Non-numeric or malformed token (`a`, `1a`, `1-2-3`, `1/2/3`)       | `FormatException`                        | Check for names (`MON`), macros (`@daily`), or a repeated `/`.                                 |
 | A parsed string without exactly five fields                        | `FormatException`                        | Supply all five fields; extra spaces between them are fine.                                    |
 | An empty field, such as `OnHours()` with no arguments              | `FormatException`                        | Guard against passing an empty array.                                                          |
 | Value outside the field's range (`8` for `DayOfWeek`)              | `ArgumentOutOfRangeException`            | See the range column in [Cron Expression Format](./cron-format.md). `DayOfWeek` allows 0–7.    |
