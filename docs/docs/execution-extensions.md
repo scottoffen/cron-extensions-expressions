@@ -22,10 +22,10 @@ Returned times always have seconds set to `00`, and the seconds component of an 
 
 ## Method reference
 
-| Method                                     | Description                                                                                         | Parameters                                                         | Returns                                                            |
-| ------------------------------------------ | --------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------ | ------------------------------------------------------------------ |
-| `GetNextExecution(DateTime? start = null)` | Returns the next valid run time from the provided start date or `DateTime.Now` if none is provided. | `start`: optional `DateTime` representing when to begin searching. | `DateTime` of the next execution (seconds = 00).                   |
-| `WillRunOn(DateTime date)`                 | Determines if the cron expression will run at the specified date/time.                              | `date`: the moment to test against the cron expression.            | `bool` — `true` if the expression matches that time. |
+| Method                                                                                   | Description                                                                                         | Parameters                                                                                                                                                                                       | Returns                                            |
+| ----------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------- |
+| `GetNextExecution(DateTime? start = null, int maxSearchYears = DefaultMaxSearchYears)` | Returns the next valid run time from the provided start date or `DateTime.Now` if none is provided. | `start`: optional `DateTime` representing when to begin searching. `maxSearchYears`: how many years past `start` to search before giving up, default `10` (see below), always enforced. | `DateTime` of the next execution (seconds = 00). |
+| `WillRunOn(DateTime date)`                                                                 | Determines if the cron expression will run at the specified date/time.                              | `date`: the moment to test against the cron expression.                                                                                                                                          | `bool` — `true` if the expression matches that time. |
 
 ## GetNextExecution
 
@@ -49,11 +49,11 @@ For predictable behavior across DST boundaries, pass a `start` with `DateTimeKin
 
 :::
 
-:::danger[Unsatisfiable expressions]
+:::note[Unsatisfiable expressions and the search horizon]
 
-`GetNextExecution` has no termination guard. An expression that can never match, such as `Day = "30"` with `Month = "2"`, causes the search to loop forever.
+`GetNextExecution` validates the day/month combination up front - the same check `ToCronExpression()` performs - so an expression that can never match, such as `Day = "30"` with `Month = "2"`, throws immediately rather than searching forever.
 
-`ToCronExpression()` is the check that rejects impossible day/month pairs, so call it before scheduling any expression assembled from untrusted or computed input.
+As a backstop, the search also has a `maxSearchYears` parameter (default `10`, exposed as `ExecutionExtensions.DefaultMaxSearchYears`) bounding how far past `start` it will look. This guard always applies and cannot be disabled. It comfortably covers every legitimately satisfiable expression - even the rarest case, day 29 combined with February, which needs a leap year and, at a century boundary such as 1900, can require up to an 8-year gap. Exceeding it throws `CronSearchHorizonExceededException`, which carries the `Expression`, `Start`, and `MaxSearchYears` involved. Seeing this exception in practice most likely indicates a defect in the search rather than a problem with the expression.
 
 :::
 
@@ -129,7 +129,7 @@ var nextSemi = semiMonthly9.GetNextExecution(new DateTime(2025, 10, 15, 9, 0, 0)
 
 * **Day/DayOfWeek matching:** These two fields are combined with OR, following standard cron. See [Day and day of week](#day-and-day-of-week) below.
 * **DayOfWeek's 7-for-Sunday alias:** See [Matching rules](#matching-rules) above - `0` and `7` are treated as equivalent when matching, including within lists and ranges.
-* **Validation:** Assumes a valid `CronExpression`. These methods perform no validation of their own; invalid combinations are expected to have failed earlier, at assignment or at `ToCronExpression()`.
+* **Validation:** `WillRunOn` performs no validation of its own; invalid combinations are expected to have failed earlier, at assignment or at `ToCronExpression()`. `GetNextExecution` additionally validates the day/month combination itself and enforces a search horizon - see [Unsatisfiable expressions and the search horizon](#getnextexecution) above.
 * **Local vs UTC:** Uses the provided `DateTime.Kind` and performs no timezone conversion. See the daylight saving time warning above before using a local `start`.
 * **Step matching:** A step matches `start`, then every `step` values after it, and never a value below `start`. For `*/n` the start is the field's own minimum, which is `0` for minute, hour, and day of week, but `1` for day of month and month.
 * **Performance:** Iterates to the next matching slot. Typical cron schedules resolve quickly even for sparse patterns.

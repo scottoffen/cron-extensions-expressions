@@ -869,4 +869,107 @@ public class ExecutionExtensionsTests
             now = now.AddDays(1);
         }
     }
+
+    [Fact]
+    public void GetNextExecution_WithUnsatisfiableDayMonthCombination_ThrowsInsteadOfHanging()
+    {
+        // GetNextExecution has no termination guard of its own - an expression that can never
+        // match (day 30 can never occur in February) must be rejected before the search even
+        // starts, the same way ToCronExpression() already rejects it. This test guards against
+        // a hang, not just an exception: if the guard were missing, this test would itself
+        // hang forever rather than fail cleanly, which is exactly why the timeout is here.
+        var expression = new CronExpression(day: "30", month: "2");
+
+        var completed = Task.Run(() =>
+            Should.Throw<ArgumentOutOfRangeException>(() => expression.GetNextExecution())
+        ).Wait(TimeSpan.FromSeconds(5));
+
+        completed.ShouldBeTrue("GetNextExecution did not return within 5 seconds.");
+    }
+
+    [Fact]
+    public void GetNextExecution_WithUnsatisfiableDayAsListOrRange_ThrowsInsteadOfHanging()
+    {
+        // A single numeric Day was already caught before this fix. Day expressed as a list or
+        // range must be checked the same way - "30,31" and "30-31" are just as unsatisfiable
+        // against February as a bare "30" is.
+        var listExpression = new CronExpression(day: "30,31", month: "2");
+        var rangeExpression = new CronExpression(day: "30-31", month: "2");
+
+        Task.Run(() =>
+            Should.Throw<ArgumentOutOfRangeException>(() => listExpression.GetNextExecution())
+        ).Wait(TimeSpan.FromSeconds(5)).ShouldBeTrue("list case did not return within 5 seconds.");
+
+        Task.Run(() =>
+            Should.Throw<ArgumentOutOfRangeException>(() => rangeExpression.GetNextExecution())
+        ).Wait(TimeSpan.FromSeconds(5)).ShouldBeTrue("range case did not return within 5 seconds.");
+    }
+
+    [Fact]
+    public void GetNextExecution_UnsatisfiableExpression_ThrowsSameExceptionAsToCronExpression()
+    {
+        var expression = new CronExpression(day: "30", month: "2");
+
+        var fromToCronExpression = Should.Throw<ArgumentOutOfRangeException>(() => expression.ToCronExpression());
+        var fromGetNextExecution = Should.Throw<ArgumentOutOfRangeException>(() => expression.GetNextExecution());
+
+        fromGetNextExecution.ParamName.ShouldBe(fromToCronExpression.ParamName);
+        fromGetNextExecution.Message.ShouldBe(fromToCronExpression.Message);
+    }
+
+    [Fact]
+    public void GetNextExecution_WithSatisfiableButRareDayMonthCombination_StillFindsAMatch()
+    {
+        // Day 29 combined with February is NOT unsatisfiable - it just requires a leap year.
+        // This must not be mistaken for the truly-impossible case (day 30 or 31 in February)
+        // and rejected up front.
+        var expression = new CronExpression(minute: "0", hour: "0", day: "29", month: "2");
+
+        var next = expression.GetNextExecution(new DateTime(2025, 1, 1));
+
+        next.Month.ShouldBe(2);
+        next.Day.ShouldBe(29);
+        (next.Year % 4).ShouldBe(0);
+    }
+
+    [Fact]
+    public void GetNextExecution_WithLeapDayAcrossCenturyBoundary_StillFindsAMatchWithinDefaultHorizon()
+    {
+        // 1900 was not a leap year, so the gap from 1896 to 1904 is 8 years - the worst-case
+        // gap for day 29 combined with February. This must still resolve within the default
+        // 10-year search horizon.
+        var expression = new CronExpression(minute: "0", hour: "0", day: "29", month: "2");
+
+        var next = expression.GetNextExecution(new DateTime(1896, 3, 1));
+
+        next.Year.ShouldBe(1904);
+        next.Month.ShouldBe(2);
+        next.Day.ShouldBe(29);
+    }
+
+    [Fact]
+    public void GetNextExecution_WithMaxSearchYearsLessThanOne_ThrowsArgumentOutOfRangeException()
+    {
+        var expression = CronExpression.Parse("* * * * *");
+
+        Should.Throw<ArgumentOutOfRangeException>(() => expression.GetNextExecution(maxSearchYears: 0));
+        Should.Throw<ArgumentOutOfRangeException>(() => expression.GetNextExecution(maxSearchYears: -1));
+    }
+
+    [Fact]
+    public void GetNextExecution_WhenSearchExceedsMaxSearchYears_ThrowsCronSearchHorizonExceededException()
+    {
+        // The next Feb 29 after March 1, 2024 is Feb 29, 2028 - 4 years out, which exceeds a
+        // deliberately small 1-year horizon. This is the realistic way to exercise the guard,
+        // since a truly unsatisfiable expression is now rejected before the search even starts.
+        var expression = new CronExpression(minute: "0", hour: "0", day: "29", month: "2");
+        var start = new DateTime(2024, 3, 1);
+
+        var ex = Should.Throw<CronSearchHorizonExceededException>(() => expression.GetNextExecution(start, maxSearchYears: 1));
+
+        ex.ShouldBeAssignableTo<InvalidOperationException>();
+        ex.Start.ShouldBe(start);
+        ex.MaxSearchYears.ShouldBe(1);
+        ex.Expression.ShouldBeSameAs(expression);
+    }
 }

@@ -237,10 +237,21 @@ public class FieldValidatorTests
     #region ValidateDayOfMonth
 
     [Fact]
-    public void ValidateDayOfMonth_NonNumericDay_DoesNotThrow()
+    public void ValidateDayOfMonth_WildcardDay_DoesNotThrow()
     {
+        // "*" is always satisfiable (day 1 exists in every month), so it short-circuits
+        // without expanding either side.
         Should.NotThrow(() => FieldValidator.ValidateDayOfMonth("*", "*"));
-        Should.NotThrow(() => FieldValidator.ValidateDayOfMonth("L", "1"));
+        Should.NotThrow(() => FieldValidator.ValidateDayOfMonth("*", "2"));
+    }
+
+    [Fact]
+    public void ValidateDayOfMonth_NonNumericDay_ThrowsArgumentException()
+    {
+        // A non-numeric, non-wildcard Day is not valid syntax for the field and can never
+        // reach this method via the CronExpression.Day setter in practice - but if it did,
+        // it must now fail loudly rather than silently skipping the day/month check.
+        Should.Throw<ArgumentException>(() => FieldValidator.ValidateDayOfMonth("L", "1"));
     }
 
     [Fact]
@@ -248,7 +259,7 @@ public class FieldValidatorTests
     {
         var ex = Should.Throw<ArgumentOutOfRangeException>(() => FieldValidator.ValidateDayOfMonth("0", "*"));
         ex.ParamName.ShouldBe("Day");
-        ex.Message.ShouldContain("Day of month 0 must be greater than or equal to 1");
+        ex.Message.ShouldContain("Value 0 for day must be between 1 and 31");
 
         Should.Throw<ArgumentOutOfRangeException>(() => FieldValidator.ValidateDayOfMonth("-1", "1"));
     }
@@ -348,6 +359,36 @@ public class FieldValidatorTests
         // but valid for July and October (max 31 each), so this only passes if July and
         // October are actually included in the expansion rather than just April.
         Should.NotThrow(() => FieldValidator.ValidateDayOfMonth("31", "4/3"));
+    }
+
+    [Fact]
+    public void ValidateDayOfMonth_DayAsList_ChecksEveryValueAgainstEveryMonth()
+    {
+        // Previously, a Day expressed as anything other than a bare single value skipped this
+        // check entirely - "30,31" against February slipped through unvalidated. It must now be
+        // caught the same way a single invalid day is.
+        var ex = Should.Throw<ArgumentOutOfRangeException>(() => FieldValidator.ValidateDayOfMonth("30,31", "2"));
+        ex.ParamName.ShouldBe("Day");
+        ex.Message.ShouldContain("30,31");
+        ex.Message.ShouldContain("2");
+
+        // "30" is invalid for February but "31" is valid for January - valid in at least one
+        // selected month is still enough.
+        Should.NotThrow(() => FieldValidator.ValidateDayOfMonth("30,31", "1"));
+    }
+
+    [Fact]
+    public void ValidateDayOfMonth_DayAsRange_ChecksEveryValueAgainstEveryMonth()
+    {
+        Should.Throw<ArgumentOutOfRangeException>(() => FieldValidator.ValidateDayOfMonth("30-31", "2"));
+        Should.NotThrow(() => FieldValidator.ValidateDayOfMonth("1-5", "2"));
+    }
+
+    [Fact]
+    public void ValidateDayOfMonth_DayAsStep_ChecksEveryValueAgainstEveryMonth()
+    {
+        Should.Throw<ArgumentOutOfRangeException>(() => FieldValidator.ValidateDayOfMonth("30/1", "2"));
+        Should.NotThrow(() => FieldValidator.ValidateDayOfMonth("1/10", "2")); // 1, 11, 21
     }
 
     #endregion

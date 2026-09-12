@@ -4,7 +4,7 @@ internal static class FieldValidator
 {
     private static readonly char[] _rangeSeparator = ['-'];
     private static readonly char[] _stepSeparator = ['/'];
-    private static readonly char[] _monthSeparator = [','];
+    private static readonly char[] _listSeparator = [','];
 
     private struct MinMax
     {
@@ -110,64 +110,59 @@ internal static class FieldValidator
 
     public static void ValidateDayOfMonth(string day, string month)
     {
-        if (!int.TryParse(day, out var dayOfMonth))
-            return;
+        if (day == _wildcard) return;
 
-        if (dayOfMonth < 1)
-        {
-            throw new ArgumentOutOfRangeException(
-                nameof(CronExpression.Day),
-                $"Day of month {dayOfMonth} must be greater than or equal to 1.");
-        }
-
-        var months = ExpandMonthExpression(month);
-
-        var validForAny = false;
-        var invalidMonths = new List<int>();
+        var days = ExpandExpression(day, Units.Day);
+        var months = ExpandExpression(month, Units.Month);
 
         foreach (var monthOfYear in months)
         {
-            if (dayOfMonth <= _daysInMonths[monthOfYear])
-            {
-                validForAny = true;
-            }
-            else
-            {
-                invalidMonths.Add(monthOfYear);
-            }
+            var maxDay = _daysInMonths[monthOfYear];
+            if (days.Any(d => d <= maxDay)) return;
         }
 
-        if (!validForAny)
-        {
-            throw new ArgumentOutOfRangeException(
-                nameof(CronExpression.Day),
-                $"Day of month {dayOfMonth} is invalid for months: {string.Join(",", months)}.");
-        }
+        var message = days.Length == 1
+            ? $"Day of month {days[0]} is invalid for months: {string.Join(",", months)}."
+            : $"No value in day expression '{day}' is valid for any of the selected months: {string.Join(",", months)}.";
+
+        throw new ArgumentOutOfRangeException(nameof(CronExpression.Day), message);
     }
 
-    private static int[] ExpandMonthExpression(string monthExpression)
+    /// <summary>
+    /// Expands a field expression (wildcard, single value, list, range, and/or step - any
+    /// combination the property setters already accept) into the concrete set of values it
+    /// represents, honoring <paramref name="unit"/>'s own minimum and maximum.
+    /// </summary>
+    /// <remarks>
+    /// This is the same expansion <see cref="Units.Month"/> has always used for the day/month
+    /// cross-check in <see cref="ValidateDayOfMonth"/>; it is now unit-generic so the same logic
+    /// covers <see cref="Units.Day"/> too, closing a gap where a <c>Day</c> expressed as
+    /// anything other than a bare single value (a list, range, or step) previously skipped that
+    /// check entirely.
+    /// </remarks>
+    private static int[] ExpandExpression(string expression, Units unit)
     {
-        if (string.IsNullOrWhiteSpace(monthExpression))
-            throw new ArgumentException(nameof(CronExpression.Month));
+        if (string.IsNullOrWhiteSpace(expression))
+            throw new ArgumentException($"{unit} expression must not be empty.", unit.ToString());
 
-        var months = new SortedSet<int>();
-        var segments = monthExpression.Split(_monthSeparator, StringSplitOptions.RemoveEmptyEntries);
+        var values = new SortedSet<int>();
+        var segments = expression.Split(_listSeparator, StringSplitOptions.RemoveEmptyEntries);
 
         foreach (var segment in segments)
         {
-            ExpandSegment(segment.Trim(), months);
+            ExpandSegment(segment.Trim(), unit, values);
         }
 
-        return months.ToArray();
+        return values.ToArray();
     }
 
-    private static void ExpandSegment(string segment, SortedSet<int> months)
+    private static void ExpandSegment(string segment, Units unit, SortedSet<int> values)
     {
         var stepParts = segment.Split(_stepSeparator, StringSplitOptions.RemoveEmptyEntries);
 
         if (stepParts.Length > 2)
         {
-            throw new ArgumentException($"Invalid month expression segment '{segment}'.", nameof(CronExpression.Month));
+            throw new ArgumentException($"Invalid {unit} expression segment '{segment}'.", unit.ToString());
         }
 
         var rangePart = stepParts[0].Trim();
@@ -177,11 +172,11 @@ internal static class FieldValidator
         if (hasStep &&
             (!int.TryParse(stepParts[1].Trim(), out step) || step < 1))
         {
-            throw new ArgumentOutOfRangeException(nameof(segment), $"Invalid step value in month expression segment '{segment}'.");
+            throw new ArgumentOutOfRangeException(nameof(segment), $"Invalid step value in {unit} expression segment '{segment}'.");
         }
 
         int start, end;
-        ParseRange(rangePart, out start, out end);
+        ParseRange(rangePart, unit, out start, out end);
 
         // An "N/M" segment (a bare starting value with a step, e.g. "2/5") expands from N
         // through the field's maximum every M steps - it is not just the single value N.
@@ -189,56 +184,56 @@ internal static class FieldValidator
         // end value from ParseRange and are left untouched.
         if (hasStep && rangePart != _wildcard && !rangePart.Contains('-'))
         {
-            end = GetMaxValue(Units.Month);
+            end = GetMaxValue(unit);
         }
 
-        for (var month = start; month <= end; month += step)
+        for (var value = start; value <= end; value += step)
         {
-            months.Add(month);
+            values.Add(value);
         }
     }
 
-    private static void ParseRange(string rangePart, out int start, out int end)
+    private static void ParseRange(string rangePart, Units unit, out int start, out int end)
     {
-        if (rangePart == "*")
+        if (rangePart == _wildcard)
         {
-            start = 1;
-            end = 12;
+            start = GetMinValue(unit);
+            end = GetMaxValue(unit);
             return;
         }
 
-        var rangeParts = rangePart.Split(_rangeSeparator, StringSplitOptions.RemoveEmptyEntries);
-
-        if (rangeParts.Length == 1)
+        // Try the whole segment as one value first. This must come before splitting on '-',
+        // since a leading '-' is a negative sign here, not a range separator - splitting
+        // "-1" on '-' with empty entries removed silently collapses it to "1", losing the
+        // sign entirely rather than rejecting it as out of range.
+        if (int.TryParse(rangePart, out var singleValue))
         {
-            var month = ParseMonth(rangeParts[0].Trim());
-            start = month;
-            end = month;
+            Validate(singleValue, unit);
+            start = end = singleValue;
             return;
         }
 
-        if (rangeParts.Length == 2)
+        var rangeParts = rangePart.Split(_rangeSeparator, 2);
+
+        if (rangeParts.Length == 2 && rangeParts[0].Length > 0)
         {
-            start = ParseMonth(rangeParts[0].Trim());
-            end = ParseMonth(rangeParts[1].Trim());
+            start = ParseFieldValue(rangeParts[0].Trim(), unit);
+            end = ParseFieldValue(rangeParts[1].Trim(), unit);
 
             if (start > end)
             {
-                throw new ArgumentOutOfRangeException(nameof(rangePart), $"Invalid month range '{rangePart}'.");
+                throw new ArgumentOutOfRangeException(nameof(rangePart), $"Invalid {unit} range '{rangePart}'.");
             }
             return;
         }
 
-        throw new ArgumentException($"Invalid month range '{rangePart}'.", nameof(CronExpression.Month));
+        throw new ArgumentException($"Invalid {unit} range '{rangePart}'.", unit.ToString());
     }
 
-    private static int ParseMonth(string value)
+    private static int ParseFieldValue(string value, Units unit)
     {
-        if (!int.TryParse(value, out var month) || month < 1 || month > 12)
-        {
-            throw new ArgumentOutOfRangeException(nameof(value), $"Month value '{value}' must be between 1 and 12.");
-        }
-
-        return month;
+        var parsed = int.Parse(value);
+        Validate(parsed, unit);
+        return parsed;
     }
 }

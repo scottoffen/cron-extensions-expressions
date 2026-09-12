@@ -8,6 +8,11 @@ public static class ExecutionExtensions
     private static readonly string _wildcard = "*";
 
     /// <summary>
+    /// The default value for <see cref="GetNextExecution"/>'s <c>maxSearchYears</c> parameter.
+    /// </summary>
+    public const int DefaultMaxSearchYears = 10;
+
+    /// <summary>
     /// Get the next execution time of the cron expression from the start date. If no start date is provided, the current date is used.
     /// </summary>
     /// <remarks>
@@ -21,15 +26,46 @@ public static class ExecutionExtensions
     /// </remarks>
     /// <param name="expression">The cron expression to evaluate.</param>
     /// <param name="start">The date and time to evaluate from. When <c>null</c>, the current local time is used.</param>
+    /// <param name="maxSearchYears">
+    /// The maximum number of years past <paramref name="start"/> the search will look before giving up. Defaults to
+    /// <see cref="DefaultMaxSearchYears"/>, which comfortably covers every legitimately satisfiable expression -
+    /// including the rarest case, a day 29 combined with February, which requires a leap year. This guard always
+    /// applies; there is no way to disable it, since reaching it should always indicate a defect rather than a
+    /// slow-but-valid search.
+    /// </param>
     /// <returns>The next scheduled execution time for the specified cron expression.</returns>
-    public static DateTime GetNextExecution(this CronExpression expression, DateTime? start = null)
+    /// <exception cref="ArgumentOutOfRangeException">
+    /// Thrown when <paramref name="maxSearchYears"/> is less than 1, or when no value satisfying
+    /// <see cref="CronExpression.Day"/> can ever occur in any month satisfying <see cref="CronExpression.Month"/> -
+    /// the same check <see cref="CronExpression.ToCronExpression"/> performs.
+    /// </exception>
+    /// <exception cref="CronSearchHorizonExceededException">
+    /// Thrown when no matching execution time is found within <paramref name="maxSearchYears"/> of
+    /// <paramref name="start"/>. This should not happen for any expression that passes the day/month check above;
+    /// seeing it most likely indicates a defect in the search itself.
+    /// </exception>
+    public static DateTime GetNextExecution(this CronExpression expression, DateTime? start = null, int maxSearchYears = DefaultMaxSearchYears)
     {
+        if (maxSearchYears < 1)
+        {
+            throw new ArgumentOutOfRangeException(nameof(maxSearchYears), $"{nameof(maxSearchYears)} must be at least 1.");
+        }
+
+        FieldValidator.ValidateDayOfMonth(expression.Day, expression.Month);
+
         var now = DateTime.Now;
         var next = start ?? now;
         start ??= now;
 
+        var horizon = start.Value.AddYears(maxSearchYears);
+
         while (true)
         {
+            if (next > horizon)
+            {
+                throw new CronSearchHorizonExceededException(expression, start.Value, maxSearchYears);
+            }
+
             if (!CanExecute(next.Minute, expression.Minute, Units.Minute))
             {
                 next = next
