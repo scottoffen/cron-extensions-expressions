@@ -71,6 +71,25 @@ internal static class FieldNames
         return string.Join(",", segments);
     }
 
+    /// <summary>
+    /// Translates a "start" and "end" value together, as a single range, and returns them as a
+    /// pair rather than a rejoined string.
+    /// </summary>
+    /// <remarks>
+    /// Exists for callers that already hold <paramref name="start"/> and <paramref name="end"/>
+    /// as separate values (the <c>RangeOf*</c> fluent overloads) and need them translated the
+    /// same way a combined <c>"start-end"</c> string passed to <see cref="Translate"/> would be -
+    /// which matters because translating <paramref name="end"/> on its own, without the context
+    /// that it is the end of a range, would lose the <c>SUN</c>-becomes-<c>7</c> rule described
+    /// on <see cref="Translate"/>. This is the only place that needs to know a range is joined
+    /// and split on <c>-</c>; callers never split the result themselves.
+    /// </remarks>
+    public static (string Start, string End) TranslateRange(string start, string end, Units unit)
+    {
+        var parts = Translate($"{start}-{end}", unit).Split(_rangeSeparator, 2);
+        return (parts[0], parts[1]);
+    }
+
     private static string TranslateSegment(string segment, Dictionary<string, string> names, Units unit)
     {
         var stepParts = segment.Split(_stepSeparator, 2);

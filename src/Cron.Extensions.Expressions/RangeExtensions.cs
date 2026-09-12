@@ -5,8 +5,6 @@
 /// </summary>
 public static class RangeExtensions
 {
-    private static readonly char[] _rangeSeparator = ['-'];
-
     /// <summary>
     /// Sets the minute component of the cron expression to "[start]-[end]".
     /// </summary>
@@ -184,13 +182,13 @@ public static class RangeExtensions
     /// This distinction matters for <see cref="Units.DayOfWeek"/>: <c>SUN</c> means <c>7</c> only
     /// when it is the end of a range, so translating <paramref name="end"/> on its own - without
     /// the context that it is, in fact, the end of a range - would lose that rule and always
-    /// produce <c>0</c> instead. Building the combined string once and translating it as a whole
-    /// is what preserves that position, exactly as it would be for a value assigned directly to
-    /// <see cref="CronExpression.DayOfWeek"/> or <see cref="CronExpression.Month"/>.
+    /// produce <c>0</c> instead. <see cref="FieldNames.TranslateRange"/> is what preserves that
+    /// position; this method only parses its result, it doesn't re-derive it - the "-" separator
+    /// convention is <see cref="FieldNames"/>'s to know, not this class's.
     /// </remarks>
     private static (int Start, int End) ToNumbers(string start, string end, Units unit)
     {
-        var parts = FieldNames.Translate($"{start}-{end}", unit).Split(_rangeSeparator, 2);
-        return (int.Parse(parts[0]), int.Parse(parts[1]));
+        var (s, e) = FieldNames.TranslateRange(start, end, unit);
+        return (int.Parse(s), int.Parse(e));
     }
 }
