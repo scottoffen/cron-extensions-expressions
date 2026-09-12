@@ -57,7 +57,13 @@ A name is translated to its numeric equivalent the moment it's assigned. The pro
 
 The interval side of a step is always numeric, matching every cron dialect that accepts names in the first place: `"JAN/3"` is rejected the same way any other malformed interval would be, since a name is never valid there.
 
-There is no name for the `7` spelling of Sunday, only `SUN`, and `SUN` always becomes `0`. Assign `"7"` directly if that's the representation you want [reflected back](#sunday-is-0-or-7).
+There is no name for the `7` spelling of Sunday, only `SUN` - but `SUN` is context-sensitive. Everywhere except the end of a range it becomes `0`, matching the field's own minimum. At the end of a range it becomes `7` instead, so `"MON-SUN"` becomes `"1-7"` (Monday through Sunday) rather than the reversed `"1-0"`, which a range's start-must-be-less-than-end rule would always reject. This can only turn previously-always-invalid patterns into valid ones - a range ending in `0` was never valid to begin with, so no range that already worked can be affected. A bare `SUN`, or `SUN` at the *start* of a range (e.g. `"SUN-FRI"`), is unaffected and still becomes `0`. An explicit numeric `"0"` is never reinterpreted either way - only the name is context-sensitive, not the digit; assign `"7"` directly if that's the representation you want [reflected back](#sunday-is-0-or-7) somewhere translation wouldn't otherwise produce it.
+
+```csharp
+new CronExpression(dayOfWeek: "MON-SUN").DayOfWeek;  // "1-7" - the whole week
+new CronExpression(dayOfWeek: "SAT-SUN").DayOfWeek;  // "6-7" - just the weekend
+new CronExpression(dayOfWeek: "SUN-FRI").DayOfWeek;  // "0-5" - SUN at the start still means 0
+```
 
 ## Macros
 

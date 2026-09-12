@@ -152,10 +152,76 @@ public class FieldNamesTests
     [Fact]
     public void Translate_DayOfWeek_HasNoNameForSeven()
     {
-        // Only "SUN" (0) has a name - the numeric alias "7" for Sunday has no three-letter
-        // equivalent in this dialect, so it is untouched by translation either way.
+        // The digit "7" itself has no name - passing it through Translate leaves it untouched,
+        // since translation only ever acts on recognized name tokens like "SUN", never on an
+        // already-numeric value. (SUN itself can become "7" - see the range-end tests below -
+        // but that's SUN being translated, not "7" being translated.)
         FieldNames.Translate("7", Units.DayOfWeek).ShouldBe("7");
     }
+
+    #region Translate - DayOfWeek - SUN at the end of a range
+
+    [Fact]
+    public void Translate_DayOfWeek_SunAtEndOfRange_BecomesSeven()
+    {
+        // A range's end can never validly be 0 (nothing is less than 0), so "X-SUN" would
+        // always have been rejected as reversed before this rule existed. Translating SUN to 7
+        // there instead makes it a valid forward range, and can never change a range that
+        // already worked, since "X-0" was never valid to begin with.
+        FieldNames.Translate("MON-SUN", Units.DayOfWeek).ShouldBe("1-7");
+        FieldNames.Translate("SAT-SUN", Units.DayOfWeek).ShouldBe("6-7");
+        FieldNames.Translate("FRI-SUN", Units.DayOfWeek).ShouldBe("5-7");
+    }
+
+    [Fact]
+    public void Translate_DayOfWeek_SunAtBothEndsOfRange_StartStaysZero()
+    {
+        // Only the end position is context-sensitive - SUN at the start of "SUN-SUN" still
+        // means 0, giving "0-7", the same full-week span the numeric form already expresses.
+        FieldNames.Translate("SUN-SUN", Units.DayOfWeek).ShouldBe("0-7");
+    }
+
+    [Fact]
+    public void Translate_DayOfWeek_SunAtStartOfRange_StillBecomesZero()
+    {
+        // SUN at the *start* of a range is unaffected by the end-of-range rule - it still means
+        // the field's own minimum, exactly as a bare SUN does.
+        FieldNames.Translate("SUN-FRI", Units.DayOfWeek).ShouldBe("0-5");
+        FieldNames.Translate("SUN-MON", Units.DayOfWeek).ShouldBe("0-1");
+    }
+
+    [Fact]
+    public void Translate_DayOfWeek_SunInList_IsNotARangeEnd_StaysZero()
+    {
+        // The end-of-range rule only applies within a single range segment - SUN appearing
+        // after a comma is a separate list element, not the end of a range, so it still means 0.
+        FieldNames.Translate("MON,SUN", Units.DayOfWeek).ShouldBe("1,0");
+    }
+
+    [Fact]
+    public void Translate_DayOfWeek_ExplicitNumericZeroAtEndOfRange_IsNotReinterpreted()
+    {
+        // Only the name "SUN" is context-sensitive - an explicit digit "0" is never
+        // reinterpreted as 7, so "MON-0" is still a genuinely reversed range.
+        FieldNames.Translate("MON-0", Units.DayOfWeek).ShouldBe("1-0");
+    }
+
+    [Fact]
+    public void Translate_DayOfWeek_SunAtEndOfRange_IsCaseInsensitive()
+    {
+        FieldNames.Translate("mon-sun", Units.DayOfWeek).ShouldBe("1-7");
+        FieldNames.Translate("MON-Sun", Units.DayOfWeek).ShouldBe("1-7");
+    }
+
+    [Fact]
+    public void Translate_Month_HasNoEndOfRangeSpecialCase()
+    {
+        // The SUN-at-end-of-range rule is specific to DayOfWeek - Month has no equivalent
+        // wraparound alias, so its ranges translate the same way regardless of position.
+        FieldNames.Translate("JAN-DEC", Units.Month).ShouldBe("1-12");
+    }
+
+    #endregion
 
     #endregion
 }

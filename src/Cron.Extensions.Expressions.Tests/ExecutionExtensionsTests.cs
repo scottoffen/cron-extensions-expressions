@@ -783,6 +783,35 @@ public class ExecutionExtensionsTests
     }
 
     [Fact]
+    public void WillRunOn_MonToSun_MatchesEveryDayOfTheWeek()
+    {
+        // "MON-SUN" translates to "1-7", which spans every day: Monday through Saturday match
+        // directly, and Sunday matches via the 0/7 equivalence the same way "7" alone would.
+        var expression = new CronExpression(dayOfWeek: "MON-SUN");
+
+        for (var day = 1; day <= 31; day++)
+        {
+            var date = new DateTime(2024, 10, day);
+            expression.WillRunOn(date).ShouldBeTrue($"{date:yyyy-MM-dd} ({date.DayOfWeek})");
+        }
+    }
+
+    [Fact]
+    public void WillRunOn_SatToSun_MatchesOnlyTheWeekend()
+    {
+        // "SAT-SUN" translates to "6-7" - Saturday matches directly, and Sunday matches via the
+        // 0/7 equivalence. Weekdays must not match.
+        var expression = new CronExpression(dayOfWeek: "SAT-SUN");
+        var weekend = new HashSet<DayOfWeek> { DayOfWeek.Saturday, DayOfWeek.Sunday };
+
+        for (var day = 1; day <= 31; day++)
+        {
+            var date = new DateTime(2024, 10, day);
+            expression.WillRunOn(date).ShouldBe(weekend.Contains(date.DayOfWeek), $"{date:yyyy-MM-dd} ({date.DayOfWeek})");
+        }
+    }
+
+    [Fact]
     public void WillRunOn_WithDayOfWeekSeven_MatchesSundayJustLikeZero()
     {
         // Per the cron specification, "7" is an alias for Sunday. CronExpression stores "7"

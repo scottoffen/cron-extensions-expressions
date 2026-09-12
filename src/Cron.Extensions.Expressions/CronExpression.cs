@@ -119,10 +119,14 @@ public sealed class CronExpression
     /// <remarks>
     /// Also accepts the three-letter names <c>SUN</c> through <c>SAT</c>, case-insensitively,
     /// anywhere a numeric value is accepted - alone, in a list, or on either side of a range
-    /// (e.g. <c>"MON-FRI"</c>). Unlike <c>7</c>, names are translated to their numeric
-    /// equivalent immediately, so <c>"SUN"</c> is always stored as <c>"0"</c>, never <c>"7"</c>;
-    /// use the numeric alias directly if <c>7</c> is what you want reflected. Step syntax
-    /// remains unsupported for this field regardless of whether names are used.
+    /// (e.g. <c>"MON-FRI"</c>). Names are translated to their numeric equivalent immediately, so
+    /// the stored value is always numeric, never the name. <c>SUN</c> is context-sensitive: it
+    /// becomes <c>"0"</c> everywhere except the end of a range, where it becomes <c>"7"</c>
+    /// instead - <c>"MON-SUN"</c> becomes <c>"1-7"</c>, not the reversed (and rejected) <c>"1-0"</c>.
+    /// A bare <c>"SUN"</c>, or <c>"SUN"</c> at the start of a range, is unaffected and still
+    /// becomes <c>"0"</c>; an explicit numeric <c>"0"</c> is never reinterpreted as <c>7</c>
+    /// either way, since only the name is context-sensitive, not the digit. Step syntax remains
+    /// unsupported for this field regardless of whether names are used.
     /// </remarks>
     /// <exception cref="FormatException">Thrown when the value is not a valid cron expression.</exception>
     /// <exception cref="ArgumentOutOfRangeException">Thrown when the values are out of range for a valid day of week expression.</exception>

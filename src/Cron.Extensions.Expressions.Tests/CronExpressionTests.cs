@@ -456,10 +456,33 @@ public class CronExpressionTests
         // Step syntax remains unsupported for day-of-week whether or not names are involved.
         Should.Throw<NotSupportedException>(() => expression.DayOfWeek = "MON-FRI/2");
 
-        // Unlike the numeric "7" alias, a name is always normalized - there is no name for the
-        // "7" spelling of Sunday, only "SUN", which always becomes "0".
+        // A bare SUN, and SUN at the start of a range, always become "0" - see
+        // DayOfWeekPropertyTest_SunAtEndOfRangeBecomesSeven for SUN at the end of a range.
         expression.DayOfWeek = "SUN";
         expression.DayOfWeek.ShouldBe("0");
+    }
+
+    [Fact]
+    public void DayOfWeekPropertyTest_SunAtEndOfRangeBecomesSeven()
+    {
+        // SUN at the end of a range means 7, not 0 - "MON-SUN" reaches forward to close out the
+        // week, and 0 would make it a reversed (and thus rejected) range. This can only turn
+        // previously-always-throwing patterns into valid ones, since "X-0" was never a valid
+        // range to begin with.
+        var expression = new CronExpression();
+
+        expression.DayOfWeek = "MON-SUN";
+        expression.DayOfWeek.ShouldBe("1-7");
+
+        expression.DayOfWeek = "SAT-SUN";
+        expression.DayOfWeek.ShouldBe("6-7");
+
+        // SUN at the *start* of a range is unaffected and still means 0.
+        expression.DayOfWeek = "SUN-FRI";
+        expression.DayOfWeek.ShouldBe("0-5");
+
+        // An explicit numeric "0" is never reinterpreted - only the name is context-sensitive.
+        Should.Throw<ArgumentOutOfRangeException>(() => expression.DayOfWeek = "MON-0");
     }
 
     [Fact]
