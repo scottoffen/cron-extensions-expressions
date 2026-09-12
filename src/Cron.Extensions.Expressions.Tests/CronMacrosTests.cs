@@ -37,11 +37,20 @@ public class CronMacrosTests
     #region Expand - values that are not expanded
 
     [Fact]
-    public void Expand_Reboot_ReturnsUnchanged()
+    public void Expand_Reboot_ThrowsNotSupportedException()
     {
-        // @reboot is deliberately not a recognized macro - it has no five-field schedule to
-        // expand into, so it must fall through exactly like any other unrecognized token.
-        CronMacros.Expand("@reboot").ShouldBe("@reboot");
+        // @reboot is a real crontab macro, unlike an outright typo, but it has no five-field
+        // schedule to expand into - it gets its own explanatory exception rather than either
+        // being expanded or silently falling through as an unrecognized token.
+        Should.Throw<NotSupportedException>(() => CronMacros.Expand("@reboot"))
+            .Message.ShouldContain("not supported");
+    }
+
+    [Fact]
+    public void Expand_Reboot_IsCaseInsensitiveAndTolerantOfWhitespace()
+    {
+        Should.Throw<NotSupportedException>(() => CronMacros.Expand("@REBOOT"));
+        Should.Throw<NotSupportedException>(() => CronMacros.Expand("  @reboot  "));
     }
 
     [Fact]

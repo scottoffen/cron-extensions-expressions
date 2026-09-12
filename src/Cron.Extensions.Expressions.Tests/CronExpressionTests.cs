@@ -680,11 +680,13 @@ public class CronExpressionTests
     }
 
     [Fact]
-    public void Parse_Reboot_ThrowsFormatException()
+    public void Parse_Reboot_ThrowsNotSupportedExceptionExplainingWhy()
     {
-        // @reboot has no five-field schedule to expand into, so it is not a recognized macro -
-        // it fails the same five-part check any other single unrecognized token would.
-        Should.Throw<FormatException>(() => CronExpression.Parse("@reboot"));
+        // @reboot has no five-field schedule to expand into. Unlike an outright unrecognized
+        // token, it gets its own explanatory NotSupportedException rather than the generic
+        // "wrong number of fields" FormatException.
+        var ex = Should.Throw<NotSupportedException>(() => CronExpression.Parse("@reboot"));
+        ex.Message.ShouldContain("not supported");
     }
 
     [Theory]

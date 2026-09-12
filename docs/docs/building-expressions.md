@@ -84,7 +84,7 @@ if (!CronExpression.TryParse("invalid value", out var result))
 }
 ```
 
-`TryParse` returns `false` for all of these cases and sets `expression` to `null`; it never throws. `@reboot` is not a recognized macro and fails the same way - see [Macros](./cron-format.md#macros).
+`TryParse` returns `false` for all of these cases and sets `expression` to `null`; it never throws. `@reboot` is a recognized macro with no five-field schedule to expand into, so it throws `NotSupportedException` explaining why - see [Macros](./cron-format.md#macros).
 
 ## Increment Helpers
 

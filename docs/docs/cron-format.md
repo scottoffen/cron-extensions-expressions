@@ -78,7 +78,7 @@ CronExpression.Parse("@daily").ToCronExpression();
 
 A macro is expanded to its five-field equivalent before the rest of parsing runs, so the resulting instance is indistinguishable from one built from the expanded fields directly - [`ToCronExpression()`](./building-expressions.md) always returns the expanded form, never the macro that produced it.
 
-`@reboot` is **not** supported. Every macro above is shorthand for one specific, already-representable five-field expression; `@reboot` means "once, when the scheduler starts," which isn't a recurring time and has no five-field schedule to expand into. It fails `Parse`'s five-part check the same way any other unrecognized single token does.
+`@reboot` is **not** supported. Every macro above is shorthand for one specific, already-representable five-field expression; `@reboot` means "once, when the scheduler starts," which isn't a recurring time and has no five-field schedule to expand into. Unlike an outright typo (`@foo`), it's a real crontab macro this library recognizes on purpose, so it throws `NotSupportedException` with a message explaining why, rather than the generic `FormatException` an unrecognized token gets.
 
 ## Unsupported Syntax
 

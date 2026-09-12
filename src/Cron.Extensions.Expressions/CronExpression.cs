@@ -157,13 +157,14 @@ public sealed class CronExpression
     /// the entire trimmed value in place of the five fields. A macro is expanded to its five-field
     /// equivalent before the rest of parsing runs, so the resulting instance is indistinguishable
     /// from one built with the expanded fields directly; <see cref="ToCronExpression"/> always
-    /// returns the expanded form, never the macro. <c>@reboot</c> is not supported - it has no
-    /// five-field schedule to expand into - and fails the same five-part check any other
-    /// unrecognized single token would.
+    /// returns the expanded form, never the macro. <c>@reboot</c> is a recognized macro with no
+    /// five-field schedule to expand into and throws <see cref="NotSupportedException"/> rather
+    /// than being expanded or silently rejected as an unrecognized token.
     /// </remarks>
     /// <param name="value">The five-part cron expression string to parse, or a recognized macro.</param>
     /// <returns>A new <see cref="CronExpression"/> instance.</returns>
     /// <exception cref="FormatException">Thrown when the value does not contain exactly five space-separated parts.</exception>
+    /// <exception cref="NotSupportedException">Thrown when the value is the <c>@reboot</c> macro.</exception>
     public static CronExpression Parse(string value)
     {
         var expanded = CronMacros.Expand(value);
