@@ -10,7 +10,7 @@ public static class ExecutionExtensions
     /// <summary>
     /// The default value for <see cref="GetNextExecution"/>'s <c>maxSearchYears</c> parameter.
     /// </summary>
-    public const int DefaultMaxSearchYears = 10;
+    internal const int DefaultMaxSearchYears = 10;
 
     /// <summary>
     /// Get the next execution time of the cron expression from the start date. If no start date is provided, the current date is used.
