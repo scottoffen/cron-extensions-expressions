@@ -1,4 +1,4 @@
-namespace Cron.Extensions.Expressions;
+﻿namespace Cron.Extensions.Expressions;
 
 internal enum Units
 {

@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="Cron.Extensions.Expressions.Tests/Cron.Extensions.Expressions.Tests.csproj" />
+  <Project Path="Cron.Extensions.Expressions/Cron.Extensions.Expressions.csproj" />
+</Solution>

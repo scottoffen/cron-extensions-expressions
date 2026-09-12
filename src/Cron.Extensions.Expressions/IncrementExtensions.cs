@@ -1,11 +1,15 @@
-namespace Cron.Extensions.Expressions;
+﻿namespace Cron.Extensions.Expressions;
 
+/// <summary>
+/// Provides extension methods for setting increment values in cron expressions.
+/// </summary>
 public static class IncrementExtensions
 {
     /// <summary>
     /// Sets the minute component of the cron expression to "*".
     /// </summary>
-    /// <param name="expression"></param>
+    /// <param name="expression">The cron expression being extended.</param>
+    /// <returns>The same <see cref="CronExpression"/> instance with the minute component set to every minute.</returns>
     public static CronExpression EveryMinute(this CronExpression expression)
     {
         expression.Minute = "*";
@@ -15,8 +19,9 @@ public static class IncrementExtensions
     /// <summary>
     /// Sets the minute component of the cron expression to "*/increment".
     /// </summary>
-    /// <param name="expression"></param>
-    /// <param name="increment"></param>
+    /// <param name="expression">The cron expression being extended.</param>
+    /// <param name="increment">The minute interval between executions.</param>
+    /// <returns>The same <see cref="CronExpression"/> instance with the minute component set to the specified interval.</returns>
     /// <remarks>Valid values are 0 to 59</remarks>
     public static CronExpression EveryXMinutes(this CronExpression expression, int increment)
     {
@@ -28,9 +33,10 @@ public static class IncrementExtensions
     /// <summary>
     /// Sets the minute component of the cron expression to "start/minutes".
     /// </summary>
-    /// <param name="expression"></param>
-    /// <param name="start"></param>
-    /// <param name="increment"></param>
+    /// <param name="expression">The cron expression being extended.</param>
+    /// <param name="start">The first minute value in the interval sequence.</param>
+    /// <param name="increment">The minute interval between executions.</param>
+    /// <returns>The same <see cref="CronExpression"/> instance with the minute component set to the specified start and interval.</returns>
     /// <remarks>Valid values for start and increment are 0 to 59</remarks>
     public static CronExpression EveryXMinutes(this CronExpression expression, int start, int increment)
     {
@@ -42,7 +48,8 @@ public static class IncrementExtensions
     /// <summary>
     /// Sets the hour component of the cron expression to "*".
     /// </summary>
-    /// <param name="expression"></param>
+    /// <param name="expression">The cron expression being extended.</param>
+    /// <returns>The same <see cref="CronExpression"/> instance with the hour component set to every hour.</returns>
     public static CronExpression EveryHour(this CronExpression expression)
     {
         expression.Hour = "*";
@@ -52,8 +59,9 @@ public static class IncrementExtensions
     /// <summary>
     /// Sets the hour component of the cron expression to "*/increment".
     /// </summary>
-    /// <param name="expression"></param>
-    /// <param name="increment"></param>
+    /// <param name="expression">The cron expression being extended.</param>
+    /// <param name="increment">The hour interval between executions.</param>
+    /// <returns>The same <see cref="CronExpression"/> instance with the hour component set to the specified interval.</returns>
     /// <remarks>Valid values are 0 to 23.</remarks>
     public static CronExpression EveryXHours(this CronExpression expression, int increment)
     {
@@ -65,9 +73,10 @@ public static class IncrementExtensions
     /// <summary>
     /// Sets the hour component of the cron expression to "start/hours".
     /// </summary>
-    /// <param name="expression"></param>
-    /// <param name="start"></param>
-    /// <param name="increment"></param>
+    /// <param name="expression">The cron expression being extended.</param>
+    /// <param name="start">The first hour value in the interval sequence.</param>
+    /// <param name="increment">The hour interval between executions.</param>
+    /// <returns>The same <see cref="CronExpression"/> instance with the hour component set to the specified start and interval.</returns>
     /// <remarks>Valid values for start and increment are 0 to 23.</remarks>
     public static CronExpression EveryXHours(this CronExpression expression, int start, int increment)
     {
@@ -79,7 +88,8 @@ public static class IncrementExtensions
     /// <summary>
     /// Sets the day component of the cron expression to "*".
     /// </summary>
-    /// <param name="expression"></param>
+    /// <param name="expression">The cron expression being extended.</param>
+    /// <returns>The same <see cref="CronExpression"/> instance with the day component set to every day.</returns>
     public static CronExpression EveryDay(this CronExpression expression)
     {
         expression.Day = "*";
@@ -89,8 +99,9 @@ public static class IncrementExtensions
     /// <summary>
     /// Sets the day component of the cron expression to "*/increment".
     /// </summary>
-    /// <param name="expression"></param>
-    /// <param name="increment"></param>
+    /// <param name="expression">The cron expression being extended.</param>
+    /// <param name="increment">The day interval between executions.</param>
+    /// <returns>The same <see cref="CronExpression"/> instance with the day component set to the specified interval.</returns>
     /// <remarks>Valid values are 1 to 31.</remarks>
     public static CronExpression EveryXDays(this CronExpression expression, int increment)
     {
@@ -102,9 +113,10 @@ public static class IncrementExtensions
     /// <summary>
     /// Sets the day component of the cron expression to "start/days".
     /// </summary>
-    /// <param name="expression"></param>
-    /// <param name="start"></param>
-    /// <param name="increment"></param>
+    /// <param name="expression">The cron expression being extended.</param>
+    /// <param name="start">The first day value in the interval sequence.</param>
+    /// <param name="increment">The day interval between executions.</param>
+    /// <returns>The same <see cref="CronExpression"/> instance with the day component set to the specified start and interval.</returns>
     /// <remarks>Valid values for start and increment are 1 to 31.</remarks>
     public static CronExpression EveryXDays(this CronExpression expression, int start, int increment)
     {
@@ -116,7 +128,8 @@ public static class IncrementExtensions
     /// <summary>
     /// Sets the month component of the cron expression to "*".
     /// </summary>
-    /// <param name="expression"></param>
+    /// <param name="expression">The cron expression being extended.</param>
+    /// <returns>The same <see cref="CronExpression"/> instance with the month component set to every month.</returns>
     public static CronExpression EveryMonth(this CronExpression expression)
     {
         expression.Month = "*";
@@ -126,8 +139,9 @@ public static class IncrementExtensions
     /// <summary>
     /// Sets the month component of the cron expression to "*/increment".
     /// </summary>
-    /// <param name="expression"></param>
-    /// <param name="increment"></param>
+    /// <param name="expression">The cron expression being extended.</param>
+    /// <param name="increment">The month interval between executions.</param>
+    /// <returns>The same <see cref="CronExpression"/> instance with the month component set to the specified interval.</returns>
     /// <remarks>Valid values are 1 to 12.</remarks>
     public static CronExpression EveryXMonths(this CronExpression expression, int increment)
     {
@@ -139,9 +153,10 @@ public static class IncrementExtensions
     /// <summary>
     /// Sets the month component of the cron expression to "start/months".
     /// </summary>
-    /// <param name="expression"></param>
-    /// <param name="start"></param>
-    /// <param name="increment"></param>
+    /// <param name="expression">The cron expression being extended.</param>
+    /// <param name="start">The first month value in the interval sequence.</param>
+    /// <param name="increment">The month interval between executions.</param>
+    /// <returns>The same <see cref="CronExpression"/> instance with the month component set to the specified start and interval.</returns>
     /// <remarks>Valid values for start and increment are 1 to 12.</remarks>
     public static CronExpression EveryXMonths(this CronExpression expression, int start, int increment)
     {
@@ -150,4 +165,3 @@ public static class IncrementExtensions
         return expression;
     }
 }
-
