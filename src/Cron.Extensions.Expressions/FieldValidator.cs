@@ -96,10 +96,15 @@ internal static class FieldValidator
         var interval = int.Parse(values[1]);
 
         if (start >= 0) Validate(start, unit);
-        Validate(interval, unit);
 
+        // Check the interval-specific rule before the generic field-range check. An interval
+        // is a step size, not a field value, so a zero or negative interval should report
+        // that directly. Otherwise the 1-based fields (day, month) would fail the range check
+        // first and describe the interval as though it were a day or month value.
         if (interval < 1)
             throw new ArgumentOutOfRangeException(unit.ToString(), $"Interval value {interval} for {unit.ToString().ToLower()} must be greater than 0.");
+
+        Validate(interval, unit);
     }
 
     private static void ValidateSingle(string value, Units unit)

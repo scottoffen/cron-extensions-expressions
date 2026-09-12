@@ -173,6 +173,35 @@ public class FieldValidatorTests
     }
 
     [Fact]
+    public void Validate_String_Step_IntervalZero_ReportsIntervalErrorForEveryField()
+    {
+        // An interval is a step size, not a field value, so a zero interval must report that
+        // directly for all four step-capable fields. The 1-based fields (day, month) would
+        // otherwise fail the generic range check first and describe the interval as though it
+        // were a day-of-month or month value.
+        foreach (var unit in new[] { Units.Minute, Units.Hour, Units.Day, Units.Month })
+        {
+            var wildcardStart = Should.Throw<ArgumentOutOfRangeException>(() => FieldValidator.Validate("*/0", unit));
+            wildcardStart.Message.ShouldContain("Interval value 0");
+            wildcardStart.Message.ShouldContain("must be greater than 0");
+
+            // Same for an explicit start value, e.g. "1/0".
+            var numericStart = Should.Throw<ArgumentOutOfRangeException>(() => FieldValidator.Validate("1/0", unit));
+            numericStart.Message.ShouldContain("Interval value 0");
+            numericStart.Message.ShouldContain("must be greater than 0");
+        }
+    }
+
+    [Fact]
+    public void Validate_String_Step_IntervalAboveFieldMaximum_ReportsRangeError()
+    {
+        // An interval larger than the field's maximum is genuinely a range problem, so it
+        // should still produce the field-range message rather than the interval-specific one.
+        var ex = Should.Throw<ArgumentOutOfRangeException>(() => FieldValidator.Validate("*/60", Units.Minute));
+        ex.Message.ShouldContain("must be between 0 and 59");
+    }
+
+    [Fact]
     public void Validate_String_Step_StartOutOfRange_ThrowsArgumentOutOfRangeException()
     {
         Should.Throw<ArgumentOutOfRangeException>(() => FieldValidator.Validate("60/5", Units.Minute));

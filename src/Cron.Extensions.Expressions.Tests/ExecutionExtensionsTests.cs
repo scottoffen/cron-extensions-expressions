@@ -870,25 +870,42 @@ public class ExecutionExtensionsTests
         }
     }
 
-    [Fact]
-    public void GetNextExecution_WithUnsatisfiableDayMonthCombination_ThrowsInsteadOfHanging()
+    /// <summary>
+    /// Runs <paramref name="action"/> on a background task and asserts it throws
+    /// <typeparamref name="TException"/> within <paramref name="timeoutSeconds"/>.
+    /// </summary>
+    /// <remarks>
+    /// These tests guard against a hang, not just a wrong exception. A blocking wait would
+    /// trip xUnit1031 and risk deadlocking the test host, so the timeout is awaited rather
+    /// than blocked on.
+    /// </remarks>
+    private static async Task ShouldThrowWithinTimeout<TException>(Action action, string because, int timeoutSeconds = 5)
+        where TException : Exception
     {
-        // GetNextExecution has no termination guard of its own - an expression that can never
-        // match (day 30 can never occur in February) must be rejected before the search even
-        // starts, the same way ToCronExpression() already rejects it. This test guards against
-        // a hang, not just an exception: if the guard were missing, this test would itself
-        // hang forever rather than fail cleanly, which is exactly why the timeout is here.
-        var expression = new CronExpression(day: "30", month: "2");
+        var work = Task.Run(() => Should.Throw<TException>(action));
+        var winner = await Task.WhenAny(work, Task.Delay(TimeSpan.FromSeconds(timeoutSeconds)));
 
-        var completed = Task.Run(() =>
-            Should.Throw<ArgumentOutOfRangeException>(() => expression.GetNextExecution())
-        ).Wait(TimeSpan.FromSeconds(5));
+        (winner == work).ShouldBeTrue(because);
 
-        completed.ShouldBeTrue("GetNextExecution did not return within 5 seconds.");
+        // Surface any assertion failure raised inside the task.
+        await work;
     }
 
     [Fact]
-    public void GetNextExecution_WithUnsatisfiableDayAsListOrRange_ThrowsInsteadOfHanging()
+    public async Task GetNextExecution_WithUnsatisfiableDayMonthCombination_ThrowsInsteadOfHanging()
+    {
+        // GetNextExecution has no termination guard of its own - an expression that can never
+        // match (day 30 can never occur in February) must be rejected before the search even
+        // starts, the same way ToCronExpression() already rejects it.
+        var expression = new CronExpression(day: "30", month: "2");
+
+        await ShouldThrowWithinTimeout<ArgumentOutOfRangeException>(
+            () => expression.GetNextExecution(),
+            "GetNextExecution did not return within 5 seconds.");
+    }
+
+    [Fact]
+    public async Task GetNextExecution_WithUnsatisfiableDayAsListOrRange_ThrowsInsteadOfHanging()
     {
         // A single numeric Day was already caught before this fix. Day expressed as a list or
         // range must be checked the same way - "30,31" and "30-31" are just as unsatisfiable
@@ -896,13 +913,13 @@ public class ExecutionExtensionsTests
         var listExpression = new CronExpression(day: "30,31", month: "2");
         var rangeExpression = new CronExpression(day: "30-31", month: "2");
 
-        Task.Run(() =>
-            Should.Throw<ArgumentOutOfRangeException>(() => listExpression.GetNextExecution())
-        ).Wait(TimeSpan.FromSeconds(5)).ShouldBeTrue("list case did not return within 5 seconds.");
+        await ShouldThrowWithinTimeout<ArgumentOutOfRangeException>(
+            () => listExpression.GetNextExecution(),
+            "list case did not return within 5 seconds.");
 
-        Task.Run(() =>
-            Should.Throw<ArgumentOutOfRangeException>(() => rangeExpression.GetNextExecution())
-        ).Wait(TimeSpan.FromSeconds(5)).ShouldBeTrue("range case did not return within 5 seconds.");
+        await ShouldThrowWithinTimeout<ArgumentOutOfRangeException>(
+            () => rangeExpression.GetNextExecution(),
+            "range case did not return within 5 seconds.");
     }
 
     [Fact]
