@@ -1,4 +1,4 @@
-namespace Cron.Extensions.Expressions.Tests;
+﻿namespace Cron.Extensions.Expressions.Tests;
 
 public class IncrementExtensionsTests
 {
@@ -98,4 +98,3 @@ public class IncrementExtensionsTests
         expression.Month.ShouldBe("*");
     }
 }
-

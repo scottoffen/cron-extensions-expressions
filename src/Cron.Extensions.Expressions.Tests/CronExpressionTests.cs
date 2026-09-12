@@ -1,4 +1,4 @@
-namespace Cron.Extensions.Expressions.Tests;
+﻿namespace Cron.Extensions.Expressions.Tests;
 
 public class CronExpressionTests
 {
@@ -402,8 +402,87 @@ public class CronExpressionTests
             () => Should.Throw<FormatException>(() => expression.Month = "1-2a"),
             () => Should.Throw<FormatException>(() => expression.Month = "a1,2"),
             () => Should.Throw<FormatException>(() => expression.Month = "1-2a"),
-            () => Should.Throw<FormatException>(() => expression.Month = "1-2-3")
+            () => Should.Throw<FormatException>(() => expression.Month = "1-2-3"),
+            () => Should.Throw<FormatException>(() => expression.Month = "1/2/3")
         );
+    }
+
+    [Fact]
+    public void MonthPropertyTest_AcceptsNamesAndTranslatesToNumeric()
+    {
+        var expression = new CronExpression();
+
+        // A single name is stored as its numeric equivalent, not the name itself.
+        expression.Month = "JAN";
+        expression.Month.ShouldBe("1");
+
+        // Case does not matter.
+        expression.Month = "dec";
+        expression.Month.ShouldBe("12");
+
+        // Names work in a list and in a range, each translated independently.
+        expression.Month = "JAN,APR,JUL,OCT";
+        expression.Month.ShouldBe("1,4,7,10");
+
+        expression.Month = "JAN-JUN";
+        expression.Month.ShouldBe("1-6");
+
+        // Names compose with the range-with-step syntax too.
+        expression.Month = "JAN-JUN/2";
+        expression.Month.ShouldBe("1-6/2");
+
+        // An unrecognized name-shaped token is still rejected, the same way any other
+        // malformed token is.
+        Should.Throw<FormatException>(() => expression.Month = "FOO");
+    }
+
+    [Fact]
+    public void DayOfWeekPropertyTest_AcceptsNamesAndTranslatesToNumeric()
+    {
+        var expression = new CronExpression();
+
+        expression.DayOfWeek = "MON";
+        expression.DayOfWeek.ShouldBe("1");
+
+        expression.DayOfWeek = "sun";
+        expression.DayOfWeek.ShouldBe("0");
+
+        expression.DayOfWeek = "MON-FRI";
+        expression.DayOfWeek.ShouldBe("1-5");
+
+        expression.DayOfWeek = "MON,WED,FRI";
+        expression.DayOfWeek.ShouldBe("1,3,5");
+
+        // Step syntax remains unsupported for day-of-week whether or not names are involved.
+        Should.Throw<NotSupportedException>(() => expression.DayOfWeek = "MON-FRI/2");
+
+        // A bare SUN, and SUN at the start of a range, always become "0" - see
+        // DayOfWeekPropertyTest_SunAtEndOfRangeBecomesSeven for SUN at the end of a range.
+        expression.DayOfWeek = "SUN";
+        expression.DayOfWeek.ShouldBe("0");
+    }
+
+    [Fact]
+    public void DayOfWeekPropertyTest_SunAtEndOfRangeBecomesSeven()
+    {
+        // SUN at the end of a range means 7, not 0 - "MON-SUN" reaches forward to close out the
+        // week, and 0 would make it a reversed (and thus rejected) range. This can only turn
+        // previously-always-throwing patterns into valid ones, since "X-0" was never a valid
+        // range to begin with.
+        var expression = new CronExpression();
+
+        expression.DayOfWeek = "MON-SUN";
+        expression.DayOfWeek.ShouldBe("1-7");
+
+        expression.DayOfWeek = "SAT-SUN";
+        expression.DayOfWeek.ShouldBe("6-7");
+
+        // SUN at the *start* of a range is unaffected and still means 0.
+        expression.DayOfWeek = "SUN-FRI";
+        expression.DayOfWeek.ShouldBe("0-5");
+
+        // An explicit numeric "0" is never reinterpreted - only the name is context-sensitive.
+        Should.Throw<ArgumentOutOfRangeException>(() => expression.DayOfWeek = "MON-0");
     }
 
     [Fact]
@@ -462,6 +541,59 @@ public class CronExpressionTests
             () => Should.Throw<FormatException>(() => expression.DayOfWeek = "1-2a"),
             () => Should.Throw<FormatException>(() => expression.DayOfWeek = "1-2-3")
         );
+    }
+
+    [Fact]
+    public void DayOfWeekPropertyTest_SevenIsAcceptedAsAliasForSunday()
+    {
+        // Per the cron specification, day-of-week accepts 0-7, where both 0 and 7 represent
+        // Sunday. Unlike an earlier version of this behavior, "7" is NOT normalized to "0" -
+        // it is stored and reflected exactly as assigned. This matters because normalizing
+        // early would break a range like "5-7" (Friday through Sunday), turning it into the
+        // reversed range "5-0". Matching (in ExecutionExtensions) is where 0 and 7 are treated
+        // as equivalent, not storage or validation.
+        var expression = new CronExpression();
+
+        expression.DayOfWeek = "7";
+        expression.DayOfWeek.ShouldBe("7");
+
+        expression.DayOfWeek = "1,7";
+        expression.DayOfWeek.ShouldBe("1,7");
+
+        expression.DayOfWeek = "5,7,3";
+        expression.DayOfWeek.ShouldBe("5,7,3");
+
+        new CronExpression(dayOfWeek: "7").DayOfWeek.ShouldBe("7");
+        new CronExpression(dayOfWeek: "7").ToCronExpression().ShouldBe("* * * * 7");
+
+        // A range ending in 7 is a legitimate Friday-through-Sunday (or similar) span, not a
+        // reversed range - this must NOT throw.
+        expression.DayOfWeek = "5-7";
+        expression.DayOfWeek.ShouldBe("5-7");
+
+        expression.DayOfWeek = "0-7";
+        expression.DayOfWeek.ShouldBe("0-7");
+
+        // A two-digit token such as "17" is still out of range on its own terms.
+        Should.Throw<ArgumentOutOfRangeException>(() => expression.DayOfWeek = "17");
+
+        // 8 and above remain invalid; only 0-7 is a legal day-of-week value.
+        Should.Throw<ArgumentOutOfRangeException>(() => expression.DayOfWeek = "8");
+
+        // Step syntax remains unsupported for day-of-week regardless of whether "7" appears.
+        Should.Throw<NotSupportedException>(() => expression.DayOfWeek = "7/2");
+    }
+
+    [Fact]
+    public void DayOfWeekPropertyTest_RangeEndingInSevenIsARealRange()
+    {
+        // "5-7" must actually validate as start(5) < end(7), not be silently rewritten into
+        // something else first.
+        Should.NotThrow(() => new CronExpression(dayOfWeek: "5-7"));
+        Should.NotThrow(() => new CronExpression(dayOfWeek: "6-7"));
+
+        // "7-7" is a zero-width range (start == end) and is rejected the same way "5-5" is.
+        Should.Throw<ArgumentOutOfRangeException>(() => new CronExpression(dayOfWeek: "7-7"));
     }
 
     [Fact]
@@ -546,6 +678,48 @@ public class CronExpressionTests
         Should.Throw<FormatException>(() => CronExpression.Parse(expression));
     }
 
+    [Theory]
+    [InlineData("@yearly", "0 0 1 1 *")]
+    [InlineData("@annually", "0 0 1 1 *")]
+    [InlineData("@monthly", "0 0 1 * *")]
+    [InlineData("@weekly", "0 0 * * 0")]
+    [InlineData("@daily", "0 0 * * *")]
+    [InlineData("@midnight", "0 0 * * *")]
+    [InlineData("@hourly", "0 * * * *")]
+    public void Parse_Macro_ExpandsToFiveFieldEquivalent(string macro, string expected)
+    {
+        // A macro is expanded before the rest of parsing runs, so the resulting instance is
+        // indistinguishable from one built with the expanded fields directly, and
+        // ToCronExpression() reflects the expanded form, never the macro that produced it.
+        var expression = CronExpression.Parse(macro);
+        expression.ToCronExpression().ShouldBe(expected);
+    }
+
+    [Fact]
+    public void Parse_Macro_IsCaseInsensitiveAndTolerantOfWhitespace()
+    {
+        CronExpression.Parse("@DAILY").ToCronExpression().ShouldBe("0 0 * * *");
+        CronExpression.Parse("  @hourly  ").ToCronExpression().ShouldBe("0 * * * *");
+    }
+
+    [Fact]
+    public void Parse_Reboot_ThrowsNotSupportedExceptionExplainingWhy()
+    {
+        // @reboot has no five-field schedule to expand into. Unlike an outright unrecognized
+        // token, it gets its own explanatory NotSupportedException rather than the generic
+        // "wrong number of fields" FormatException.
+        var ex = Should.Throw<NotSupportedException>(() => CronExpression.Parse("@reboot"));
+        ex.Message.ShouldContain("not supported");
+    }
+
+    [Theory]
+    [InlineData("@foo")]
+    [InlineData("@daily extra")]
+    public void Parse_UnrecognizedOrMalformedMacro_ThrowsFormatException(string value)
+    {
+        Should.Throw<FormatException>(() => CronExpression.Parse(value));
+    }
+
     [Fact]
     public void TryParseTest()
     {
@@ -579,5 +753,63 @@ public class CronExpressionTests
 
         result.ShouldBeFalse();
         schedule.ShouldBeNull();
+    }
+
+    [Theory]
+    [InlineData("@daily", "0 0 * * *")]
+    [InlineData("@hourly", "0 * * * *")]
+    public void TryParse_Macro_ReturnsTrueWithExpandedExpression(string macro, string expected)
+    {
+        var result = CronExpression.TryParse(macro, out var expression);
+
+        result.ShouldBeTrue();
+        expression.ShouldNotBeNull();
+        expression.ToCronExpression().ShouldBe(expected);
+    }
+
+    [Fact]
+    public void TryParse_Reboot_ReturnsFalse()
+    {
+        var result = CronExpression.TryParse("@reboot", out var expression);
+
+        result.ShouldBeFalse();
+        expression.ShouldBeNull();
+    }
+
+    [Fact]
+    public void Parse_RangeWithStep_RoundTripsThroughToCronExpression()
+    {
+        // "5-10/2" previously failed to parse at all (the Minute setter rejected it), so a
+        // round trip through Parse -> ToCronExpression is the end-to-end confirmation that
+        // range-combined-with-step is now accepted, not just the underlying validator.
+        var value = "5-10/2 8-17/3 1-31/5 1-12/2 *";
+
+        var expression = CronExpression.Parse(value);
+
+        expression.ShouldSatisfyAllConditions(
+            () => expression.Minute.ShouldBe("5-10/2"),
+            () => expression.Hour.ShouldBe("8-17/3"),
+            () => expression.Day.ShouldBe("1-31/5"),
+            () => expression.Month.ShouldBe("1-12/2"),
+            () => expression.DayOfWeek.ShouldBe("*")
+        );
+
+        expression.ToCronExpression().ShouldBe(value);
+    }
+
+    [Fact]
+    public void Parse_WithNames_TranslatesToNumericAndRoundTripsNumeric()
+    {
+        // Parsing goes through the same property setters as direct assignment, so names are
+        // translated here too. ToCronExpression() always emits the numeric form - the parsed
+        // instance has no memory of the names it was given.
+        var expression = CronExpression.Parse("30 6 * JAN-JUN MON-FRI");
+
+        expression.ShouldSatisfyAllConditions(
+            () => expression.Month.ShouldBe("1-6"),
+            () => expression.DayOfWeek.ShouldBe("1-5")
+        );
+
+        expression.ToCronExpression().ShouldBe("30 6 * 1-6 1-5");
     }
 }

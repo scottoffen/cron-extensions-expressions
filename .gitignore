@@ -43,10 +43,6 @@ bld/
 # Visual Studio 2017 auto generated files
 Generated\ Files/
 
-# EF Core Power Tools
-# https://marketplace.visualstudio.com/items?itemName=ErikEJ.EFCorePowerTools
-*.dgml
-
 # MSTest test Results
 [Tt]est[Rr]esult*/
 [Bb]uild[Ll]og.*
@@ -92,6 +88,8 @@ StyleCopReport.xml
 *.pgc
 *.pgd
 *.rsp
+# but not Directory.Build.rsp, as it configures directory-level build defaults
+!Directory.Build.rsp
 *.sbr
 *.tlb
 *.tli
@@ -392,7 +390,7 @@ FodyWeavers.xsd
 # !.vscode/tasks.json
 # !.vscode/launch.json
 # !.vscode/extensions.json
-# *.code-workspace
+*.code-workspace
 
 # Local History for Visual Studio Code
 .history/
@@ -406,7 +404,7 @@ FodyWeavers.xsd
 
 # JetBrains Rider
 *.sln.iml
-.idea
+.idea/
 
 ##
 ## Visual studio for Mac
@@ -426,11 +424,7 @@ autom4te.cache/
 tarballs/
 test-results/
 
-# Mac bundle stuff
-*.dmg
-*.app
-
-# content below from: https://github.com/github/gitignore/blob/master/Global/macOS.gitignore
+# content below from: https://github.com/github/gitignore/blob/main/Global/macOS.gitignore
 # General
 .DS_Store
 .AppleDouble
@@ -459,7 +453,7 @@ Network Trash Folder
 Temporary Items
 .apdisk
 
-# content below from: https://github.com/github/gitignore/blob/master/Global/Windows.gitignore
+# content below from: https://github.com/github/gitignore/blob/main/Global/Windows.gitignore
 # Windows thumbnail cache files
 Thumbs.db
 ehthumbs.db
