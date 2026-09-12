@@ -45,6 +45,7 @@ Restricted to particular days of the week:
 ```csharp
 // Weekdays at 06:30
 new CronExpression("30", "6", dayOfWeek: "1-5").ToCronExpression(); // "30 6 * * 1-5"
+// Equivalently, using names directly: dayOfWeek: "MON-FRI" produces the same "1-5"
 
 // Every Monday, Wednesday, and Friday at noon
 new CronExpression(minute: "0", hour: "12")
@@ -55,6 +56,7 @@ new CronExpression(minute: "0", hour: "12")
 new CronExpression(minute: "0", hour: "9")
     .OnDaysOfWeek(0, 6)
     .ToCronExpression(); // "0 9 * * 0,6"
+// Equivalently, using names directly: dayOfWeek: "SAT-SUN" produces "6-7", matching the same two days
 ```
 
 ## Monthly and Yearly
@@ -72,10 +74,26 @@ new CronExpression("0", "0", "1").ToCronExpression(); // "0 0 1 * *"
 new CronExpression(minute: "0", hour: "0", day: "1")
     .OnMonths(1, 4, 7, 10)
     .ToCronExpression(); // "0 0 1 1,4,7,10 *"
+// Equivalently, using names directly: month: "JAN,APR,JUL,OCT" produces the same "1,4,7,10"
 
 // Only in January, at midnight
 new CronExpression("0", "0", month: "1").ToCronExpression(); // "0 0 * 1 *"
+// Equivalently, using the name directly: month: "JAN" produces the same "1"
 ```
+
+## Macros
+
+The standard crontab macros expand to the equivalent five-field expression through `Parse`, so you can use whichever reads more clearly for a given schedule:
+
+```csharp
+CronExpression.Parse("@yearly").ToCronExpression();  // "0 0 1 1 *"  - once a year, midnight on Jan 1
+CronExpression.Parse("@monthly").ToCronExpression(); // "0 0 1 * *"  - once a month, midnight on the 1st
+CronExpression.Parse("@weekly").ToCronExpression();  // "0 0 * * 0"  - once a week, midnight on Sunday
+CronExpression.Parse("@daily").ToCronExpression();   // "0 0 * * *"  - once a day, at midnight
+CronExpression.Parse("@hourly").ToCronExpression();  // "0 * * * *"  - once an hour, on the hour
+```
+
+See [Macros](./cron-format.md#macros) for the full list, including the `@annually`/`@midnight` aliases and why `@reboot` isn't supported.
 
 ## Business Hours
 
@@ -94,6 +112,9 @@ new CronExpression(minute: "0")
     .RangeOfHours(9, 17)
     .RangeOfWeek(1, 5)
     .ToCronExpression(); // "0 9-17 * * 1-5"
+
+// Every other hour during business hours, weekdays only - a range combined with a step
+new CronExpression(minute: "0", hour: "9-17/2", dayOfWeek: "1-5").ToCronExpression(); // "0 9-17/2 * * 1-5"
 ```
 
 :::note[A few of these read differently than they look]

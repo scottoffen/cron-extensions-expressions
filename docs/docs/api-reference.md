@@ -13,13 +13,15 @@ The core type. It is mutable, and every assignment is validated.
 
 Each field is exposed as a property and can also be set through the corresponding constructor parameter. Every constructor parameter is optional and defaults to `"*"`, so `new CronExpression()` produces `"* * * * *"`. Arguments are assigned through the properties, which means they are validated at construction.
 
-| Property    | Constructor parameter | Type     | Default | Valid range           |
-| ----------- | --------------------- | -------- | ------- | --------------------- |
-| `Minute`    | `minute`              | `string` | `"*"`   | 0–59                  |
-| `Hour`      | `hour`                | `string` | `"*"`   | 0–23                  |
-| `Day`       | `day`                 | `string` | `"*"`   | 1–31                  |
-| `Month`     | `month`               | `string` | `"*"`   | 1–12                  |
-| `DayOfWeek` | `dayOfWeek`           | `string` | `"*"`   | 0–7 (Sunday–Saturday) |
+| Property    | Constructor parameter | Type     | Default | Valid range           | Names accepted |
+| ----------- | --------------------- | -------- | ------- | --------------------- | -------------- |
+| `Minute`    | `minute`              | `string` | `"*"`   | 0–59                  | —              |
+| `Hour`      | `hour`                | `string` | `"*"`   | 0–23                  | —              |
+| `Day`       | `day`                 | `string` | `"*"`   | 1–31                  | —              |
+| `Month`     | `month`               | `string` | `"*"`   | 1–12                  | `JAN`–`DEC`    |
+| `DayOfWeek` | `dayOfWeek`           | `string` | `"*"`   | 0–7 (Sunday–Saturday) | `SUN`–`SAT`    |
+
+Names are case-insensitive and translated to their numeric equivalent immediately - the property, and `ToCronExpression()`, always reflect the numeric form. See [Month and Day-of-Week Names](./cron-format.md#month-and-day-of-week-names) for the full rules, including the context-sensitive handling of `SUN` at the end of a `DayOfWeek` range.
 
 See [Validation and Errors](./validation.md) for what an invalid assignment throws.
 
@@ -30,7 +32,7 @@ The type exposes three public methods:
 | Method                                                              | Description                                                                                                   |
 | ------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
 | `string ToCronExpression()`                                         | Returns the formatted five-field cron string, and confirms that an explicit day is valid for the selected months. |
-| `static CronExpression Parse(string value)`                         | Parses a cron string; throws on invalid input.                                                                |
+| `static CronExpression Parse(string value)`                         | Parses a cron string, or a recognized macro (see [Macros](./cron-format.md#macros)); throws on invalid input.     |
 | `static bool TryParse(string value, out CronExpression? expression)`| Parses without throwing; returns `false` and sets `expression` to `null` on failure.                          |
 
 ## Increment Helpers
