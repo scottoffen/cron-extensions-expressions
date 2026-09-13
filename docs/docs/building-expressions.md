@@ -93,17 +93,17 @@ if (!CronExpression.TryParse("invalid value", out var result))
 | Method                                    | Effect on `CronExpression`                                                                  | Valid values                 |
 | ----------------------------------------- | ------------------------------------------------------------------------------------------- | ---------------------------- |
 | `EveryMinute()`                           | `Minute = "*"`                                                                              | —                            |
-| `EveryXMinutes(int increment)`            | `Minute = "*/{increment}"` (uses `EveryMinute()` when `increment == 1`)                     | increment: 1–59              |
-| `EveryXMinutes(int start, int increment)` | `Minute = "{start}/{increment}"` (uses `EveryMinute()` when `start == 1 && increment == 1`) | start: 0–59, increment: 1–59 |
+| `EveryXMinutes(int increment)`            | `Minute = "*/{increment}"` (uses `EveryMinute()` when `increment == 1`)                     | increment: 1-59              |
+| `EveryXMinutes(int start, int increment)` | `Minute = "{start}/{increment}"` (uses `EveryMinute()` when `start == 1 && increment == 1`) | start: 0-59, increment: 1-59 |
 | `EveryHour()`                             | `Hour = "*"`                                                                                | —                            |
-| `EveryXHours(int increment)`              | `Hour = "*/{increment}"` (uses `EveryHour()` when `increment == 1`)                         | increment: 1–23              |
-| `EveryXHours(int start, int increment)`   | `Hour = "{start}/{increment}"` (uses `EveryHour()` when `start == 1 && increment == 1`)     | start: 0–23, increment: 1–23 |
+| `EveryXHours(int increment)`              | `Hour = "*/{increment}"` (uses `EveryHour()` when `increment == 1`)                         | increment: 1-23              |
+| `EveryXHours(int start, int increment)`   | `Hour = "{start}/{increment}"` (uses `EveryHour()` when `start == 1 && increment == 1`)     | start: 0-23, increment: 1-23 |
 | `EveryDay()`                              | `Day = "*"`                                                                                 | —                            |
-| `EveryXDays(int increment)`               | `Day = "*/{increment}"` (uses `EveryDay()` when `increment == 1`)                           | increment: 1–31              |
-| `EveryXDays(int start, int increment)`    | `Day = "{start}/{increment}"` (uses `EveryDay()` when `start == 1 && increment == 1`)       | start: 1–31, increment: 1–31 |
+| `EveryXDays(int increment)`               | `Day = "*/{increment}"` (uses `EveryDay()` when `increment == 1`)                           | increment: 1-31              |
+| `EveryXDays(int start, int increment)`    | `Day = "{start}/{increment}"` (uses `EveryDay()` when `start == 1 && increment == 1`)       | start: 1-31, increment: 1-31 |
 | `EveryMonth()`                            | `Month = "*"`                                                                               | —                            |
-| `EveryXMonths(int increment)`             | `Month = "*/{increment}"` (uses `EveryMonth()` when `increment == 1`)                       | increment: 1–12              |
-| `EveryXMonths(int start, int increment)`  | `Month = "{start}/{increment}"` (uses `EveryMonth()` when `start == 1 && increment == 1`)   | start: 1–12, increment: 1–12 |
+| `EveryXMonths(int increment)`             | `Month = "*/{increment}"` (uses `EveryMonth()` when `increment == 1`)                       | increment: 1-12              |
+| `EveryXMonths(int start, int increment)`  | `Month = "{start}/{increment}"` (uses `EveryMonth()` when `start == 1 && increment == 1`)   | start: 1-12, increment: 1-12 |
 
 ```csharp
 // Every 5 minutes
