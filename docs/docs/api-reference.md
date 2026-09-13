@@ -15,11 +15,11 @@ Each field is exposed as a property and can also be set through the correspondin
 
 | Property    | Constructor parameter | Type     | Default | Valid range           | Names accepted |
 | ----------- | --------------------- | -------- | ------- | --------------------- | -------------- |
-| `Minute`    | `minute`              | `string` | `"*"`   | 0–59                  | —              |
-| `Hour`      | `hour`                | `string` | `"*"`   | 0–23                  | —              |
-| `Day`       | `day`                 | `string` | `"*"`   | 1–31                  | —              |
-| `Month`     | `month`               | `string` | `"*"`   | 1–12                  | `JAN`–`DEC`    |
-| `DayOfWeek` | `dayOfWeek`           | `string` | `"*"`   | 0–7 (Sunday–Saturday) | `SUN`–`SAT`    |
+| `Minute`    | `minute`              | `string` | `"*"`   | 0-59                  | —              |
+| `Hour`      | `hour`                | `string` | `"*"`   | 0-23                  | —              |
+| `Day`       | `day`                 | `string` | `"*"`   | 1-31                  | —              |
+| `Month`     | `month`               | `string` | `"*"`   | 1-12                  | `JAN`-`DEC`    |
+| `DayOfWeek` | `dayOfWeek`           | `string` | `"*"`   | 0-7 (Sunday-Saturday) | `SUN`-`SAT`    |
 
 Names are case-insensitive and translated to their numeric equivalent immediately - the property, and `ToCronExpression()`, always reflect the numeric form. See [Month and Day-of-Week Names](./cron-format.md#month-and-day-of-week-names) for the full rules, including the context-sensitive handling of `SUN` at the end of a `DayOfWeek` range.
 

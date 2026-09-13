@@ -11,11 +11,11 @@ Expressions always have exactly five fields, in the standard cron order (the sam
 
 | Field     | Property    | Valid range           | Step syntax |
 | --------- | ----------- | --------------------- | ----------- |
-| Minute    | `Minute`    | 0–59                  | Yes         |
-| Hour      | `Hour`      | 0–23                  | Yes         |
-| Day (DOM) | `Day`       | 1–31                  | Yes         |
-| Month     | `Month`     | 1–12                  | Yes         |
-| DayOfWeek | `DayOfWeek` | 0–7 (Sunday–Saturday) | **No**      |
+| Minute    | `Minute`    | 0-59                  | Yes         |
+| Hour      | `Hour`      | 0-23                  | Yes         |
+| Day (DOM) | `Day`       | 1-31                  | Yes         |
+| Month     | `Month`     | 1-12                  | Yes         |
+| DayOfWeek | `DayOfWeek` | 0-7 (Sunday-Saturday) | **No**      |
 
 ## Supported Syntax
 
@@ -97,7 +97,24 @@ This library implements a deliberately small grammar. The following is valid in 
 
 ## Field Semantics
 
-The following three rules apply to every expression, no matter how it was built or when it is evaluated.
+The following four rules apply to every expression, no matter how it was built or when it is evaluated.
+
+### Ranges Don't Wrap
+
+A range's start must be strictly less than its end - `9-17` is valid, `17-9` is not - in this library and in every cron dialect. There is no syntax, in any dialect, for a single range that wraps past the end of a field back to its beginning.
+
+When the schedule you actually want crosses that boundary - a day-of-week schedule from Thursday through Tuesday, or an hour range from 22:00 through 04:00 - split it into two ascending ranges joined by a comma, or list the individual values instead:
+
+```csharp
+// Thursday through Tuesday (i.e. every day except Wednesday)
+new CronExpression(dayOfWeek: "THU-SAT,SUN-TUE").DayOfWeek;    // "4-6,0-2"
+new CronExpression().OnDaysOfWeek(4, 5, 6, 0, 1, 2).DayOfWeek; // "0,1,2,4,5,6"
+
+// 22:00 through 04:00
+new CronExpression(hour: "22-23,0-4").Hour; // "22-23,0-4"
+```
+
+Both forms select the same set of values - a comma-separated list is always an OR of every element, so there's no functional difference between writing two ranges or one enumerated list.
 
 ### Sunday Is 0 or 7
 
